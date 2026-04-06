@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 28 28" fill="none">
+  <!-- Compact 2-row grid for sidebar collapsed view -->
+  <rect x="0" y="0" width="8" height="8" fill="#3B2D8E"/>
+  <rect x="10" y="0" width="8" height="8" fill="#6DC944"/>
+  <rect x="20" y="0" width="8" height="8" fill="#6DC944"/>
+  <rect x="0" y="10" width="8" height="8" fill="#3B2D8E"/>
+  <rect x="10" y="10" width="8" height="8" fill="#3B2D8E"/>
+  <rect x="20" y="10" width="8" height="8" fill="#6DC944"/>
+  <rect x="0" y="20" width="8" height="8" fill="#3B2D8E"/>
+  <rect x="10" y="20" width="18" height="8" fill="#3B2D8E"/>
+</svg>
