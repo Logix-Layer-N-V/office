@@ -278,7 +278,7 @@ export function Header({ title, subtitle, action }: HeaderProps) {
                 {/* Menu items */}
                 <div className="py-1.5">
                   <Link
-                    href="/settings"
+                    href="/profile"
                     onClick={() => setShowProfile(false)}
                     className="flex items-center gap-3 px-4 py-2 text-xs text-surface-600 hover:bg-surface-50 hover:text-surface-800 transition-colors"
                   >
