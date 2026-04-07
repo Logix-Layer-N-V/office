@@ -10,7 +10,6 @@ import {
   Briefcase,
   ClipboardList,
   Zap,
-  BarChart3,
   Calendar,
   DollarSign,
   Clock,
@@ -23,13 +22,12 @@ import { useApi, apiMutate } from "@/hooks/use-api"
 import { formatCurrency, formatDate, getStatusColor, toNum } from "@/lib/utils"
 import type { Project, WorkOrder, Task, Client } from "@/types"
 
-type TabKey = "overview" | "workorders" | "tasks" | "gantt"
+type TabKey = "overview" | "workorders" | "tasks"
 
 const tabItems: Array<{ key: TabKey; label: string; icon: React.ReactNode }> = [
   { key: "overview", label: "Overview", icon: <Briefcase className="h-4 w-4" /> },
   { key: "workorders", label: "Work Orders", icon: <ClipboardList className="h-4 w-4" /> },
   { key: "tasks", label: "Tasks", icon: <Zap className="h-4 w-4" /> },
-  { key: "gantt", label: "Gantt", icon: <BarChart3 className="h-4 w-4" /> },
 ]
 
 const STATUS_STYLES: Record<string, { bg: string; dot: string }> = {
@@ -588,71 +586,6 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                     ))}
                   </tbody>
                 </table>
-              )}
-            </div>
-          )}
-
-          {/* ─── GANTT TAB ────────────────────── */}
-          {activeTab === "gantt" && (
-            <div className="card p-5">
-              <h3 className="text-sm font-semibold text-surface-800 mb-5">Project Timeline</h3>
-              {projectTasks.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-12 text-surface-400">
-                  <BarChart3 className="h-8 w-8 mb-2 opacity-30" />
-                  <p className="text-xs">No tasks to show on the timeline</p>
-                </div>
-              ) : (
-                <div className="overflow-x-auto">
-                  <div className="min-w-[600px]">
-                    {/* Header */}
-                    <div className="flex gap-4 mb-3 pb-2 border-b border-surface-100">
-                      <div className="w-44 flex-shrink-0">
-                        <p className="text-2xs font-semibold uppercase tracking-wider text-surface-500">Task</p>
-                      </div>
-                      <div className="flex-1 flex justify-between">
-                        <span className="text-2xs text-surface-400">{formatDate(project.startDate)}</span>
-                        <span className="text-2xs text-surface-400">{formatDate(project.deadline)}</span>
-                      </div>
-                    </div>
-
-                    {/* Bars */}
-                    <div className="space-y-2">
-                      {projectTasks.map((task) => {
-                        const projectStart = new Date(project.startDate).getTime()
-                        const projectEnd = new Date(project.deadline).getTime()
-                        const taskStart = new Date(task.createdAt).getTime()
-                        const taskDue = new Date(task.dueDate).getTime()
-                        const totalSpan = projectEnd - projectStart || 1
-
-                        const left = Math.max(((taskStart - projectStart) / totalSpan) * 100, 0)
-                        const width = Math.max(Math.min(((taskDue - taskStart) / totalSpan) * 100, 100 - left), 3)
-
-                        const barColor = task.status === "DONE" ? "bg-emerald-500"
-                          : task.priority === "CRITICAL" ? "bg-red-500"
-                          : task.priority === "HIGH" ? "bg-orange-500"
-                          : task.priority === "MEDIUM" ? "bg-amber-500"
-                          : "bg-surface-400"
-
-                        return (
-                          <div key={task.id} className="flex items-center gap-4">
-                            <div className="w-44 flex-shrink-0 flex items-center gap-2">
-                              <span className={`h-1.5 w-1.5 rounded-full flex-shrink-0 ${barColor}`} />
-                              <p className="text-xs text-surface-700 truncate">{task.title}</p>
-                            </div>
-                            <div className="flex-1">
-                              <div className="relative h-6 bg-surface-50 rounded-md border border-surface-100">
-                                <div
-                                  className={`absolute top-0.5 bottom-0.5 rounded ${barColor} ${task.status === "DONE" ? "opacity-100" : "opacity-70"}`}
-                                  style={{ left: `${left}%`, width: `${width}%` }}
-                                />
-                              </div>
-                            </div>
-                          </div>
-                        )
-                      })}
-                    </div>
-                  </div>
-                </div>
               )}
             </div>
           )}
