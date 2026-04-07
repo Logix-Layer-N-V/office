@@ -3,7 +3,7 @@ import { projects, clients, workOrders, tasks } from "@/db/schema"
 import { eq } from "drizzle-orm"
 import { NextResponse } from "next/server"
 
-export async function GET(_req: Request, { params }: { params: { id: string } }) {
+export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     if (!db) return NextResponse.json(null, { status: 404 })
     const { id } = await params
@@ -17,7 +17,7 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
   }
 }
 
-export async function PUT(req: Request, { params }: { params: { id: string } }) {
+export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     if (!db) return NextResponse.json({ error: "Database not configured" }, { status: 503 })
     const { id } = await params
@@ -48,7 +48,7 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
   }
 }
 
-export async function DELETE(_req: Request, { params }: { params: { id: string } }) {
+export async function DELETE(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     if (!db) return NextResponse.json({ error: "Database not configured" }, { status: 503 })
     const { id } = await params

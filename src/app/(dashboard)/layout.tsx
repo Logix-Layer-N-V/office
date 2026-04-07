@@ -48,7 +48,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[9px] font-bold text-white">3</span>
           </Link>
           <div className="rounded-lg p-1.5">
-            <UserButton afterSignOutUrl="/sign-in" />
+            <UserButton signInUrl="/sign-in" />
           </div>
         </div>
       </header>

@@ -331,7 +331,7 @@ export default function ClientDetailPage() {
                 </div>
                 <div className="card p-4">
                   <p className="text-2xs text-surface-500 font-medium">Active Projects</p>
-                  <p className="text-2xl font-bold text-surface-900 mt-1">{clientProjects.filter(p => p.status === "IN_PROGRESS").length}</p>
+                  <p className="text-2xl font-bold text-surface-900 mt-1">{clientProjects.filter(p => p.status === "ACTIVE").length}</p>
                   <p className="text-2xs text-surface-400 mt-2">of {clientProjects.length} total</p>
                 </div>
               </div>
@@ -610,11 +610,11 @@ export default function ClientDetailPage() {
                         </div>
                         <div>
                           <p className="text-surface-500">Spent</p>
-                          <p className="font-semibold text-surface-800">{formatCurrency(proj.spent)}</p>
+                          <p className="font-semibold text-surface-800">{formatCurrency(toNum(proj.spent))}</p>
                         </div>
                         <div>
                           <p className="text-surface-500">Remaining</p>
-                          <p className="font-semibold text-emerald-600">{formatCurrency(Math.max(proj.budget - proj.spent, 0))}</p>
+                          <p className="font-semibold text-emerald-600">{formatCurrency(Math.max(toNum(proj.budget) - toNum(proj.spent), 0))}</p>
                         </div>
                         <div>
                           <p className="text-surface-500">Deadline</p>

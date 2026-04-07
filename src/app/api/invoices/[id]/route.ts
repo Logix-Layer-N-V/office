@@ -32,7 +32,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
         ...(invoiceData.description !== undefined && { description: invoiceData.description }),
         ...(invoiceData.clientId !== undefined && { clientId: invoiceData.clientId }),
         ...(invoiceData.status !== undefined && { status: invoiceData.status }),
-        ...(invoiceData.dueDate !== undefined && { dueDate: invoiceData.dueDate ? new Date(invoiceData.dueDate) : null }),
+        ...(invoiceData.dueDate !== undefined && { dueDate: invoiceData.dueDate ? new Date(invoiceData.dueDate) : undefined }),
         ...(invoiceData.purchaseOrder !== undefined && { purchaseOrder: invoiceData.purchaseOrder }),
         updatedAt: new Date(),
       })
@@ -50,9 +50,9 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
           id: item.id || `${id}-item-${i}`,
           invoiceId: id,
           description: item.description || "",
-          hours: parseFloat(String(item.hours || item.quantity)) || 0,
-          rate: parseFloat(String(item.rate)) || 0,
-          amount,
+          hours: String(parseFloat(String(item.hours || item.quantity)) || 0),
+          rate: String(parseFloat(String(item.rate)) || 0),
+          amount: String(amount),
           sortOrder: i,
         })
       }

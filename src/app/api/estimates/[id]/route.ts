@@ -50,9 +50,9 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
           id: item.id || `${id}-item-${i}`,
           estimateId: id,
           description: item.description || "",
-          hours: parseFloat(String(item.hours)) || 0,
-          rate: parseFloat(String(item.rate)) || 0,
-          amount,
+          hours: String(parseFloat(String(item.hours)) || 0),
+          rate: String(parseFloat(String(item.rate)) || 0),
+          amount: String(amount),
           sortOrder: i,
         })
       }

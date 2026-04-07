@@ -198,7 +198,7 @@ function ListView({ projects }: { projects: Project[] }) {
             <div className="h-2 bg-surface-200 rounded-full overflow-hidden">
               <div
                 className="h-full bg-amber-500 transition-all"
-                style={{ width: `${Math.min(((project as any).spent ?? 0 / project.budget) * 100, 100)}%` }}
+                style={{ width: `${Math.min((((project as any).spent ?? 0) / (parseFloat(String(project.budget)) || 1)) * 100, 100)}%` }}
               />
             </div>
           </div>
