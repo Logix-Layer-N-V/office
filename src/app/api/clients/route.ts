@@ -19,10 +19,23 @@ export async function POST(req: Request) {
     const body = await req.json()
     const [client] = await db
       .insert(clients)
-      .values({ id: crypto.randomUUID(), ...body })
+      .values({
+        id: crypto.randomUUID(),
+        name: body.name,
+        email: body.email,
+        phone: body.phone || null,
+        company: body.company || null,
+        address: body.address || null,
+        taxId: body.taxId || null,
+        currency: body.currency || "USD",
+        status: body.status || "ACTIVE",
+        notes: body.notes || null,
+        organizationId: body.organizationId || "org_default",
+      })
       .returning()
     return NextResponse.json(client, { status: 201 })
-  } catch {
+  } catch (err) {
+    console.error("Client POST error:", err)
     return NextResponse.json({ error: "Failed to create client" }, { status: 500 })
   }
 }
