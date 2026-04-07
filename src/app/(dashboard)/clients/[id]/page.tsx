@@ -25,9 +25,13 @@ import {
   Key,
   MessageSquare,
   ChevronRight,
+  ChevronDown,
   Check,
   AlertCircle,
   TrendingUp,
+  Mail,
+  X,
+  Send,
 } from "lucide-react"
 import type { Client, Proposal, Estimate, Invoice, Payment, Project, WorkOrder, Task, ClientApiKey, ClientTokenUsage } from "@/types"
 
@@ -47,10 +51,99 @@ const sidebarItems: Array<{ key: TabKey; label: string; icon: React.ReactNode }>
   { key: "notes", label: "Notes", icon: <MessageSquare className="h-4 w-4" /> },
 ]
 
+function EmailModal({ client, onClose }: { client: Client; onClose: () => void }) {
+  const [subject, setSubject] = useState("")
+  const [message, setMessage] = useState("")
+  const [status, setStatus] = useState<"idle" | "sending" | "sent" | "error">("idle")
+
+  async function handleSend() {
+    if (!subject || !message) return
+    setStatus("sending")
+    try {
+      const res = await fetch("/api/email/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ to: client.email, subject, message }),
+      })
+      setStatus(res.ok ? "sent" : "error")
+    } catch {
+      setStatus("error")
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+      <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg mx-4">
+        <div className="flex items-center justify-between p-4 border-b border-surface-200">
+          <div className="flex items-center gap-2">
+            <Mail className="h-4 w-4 text-brand-600" />
+            <h2 className="text-sm font-semibold text-surface-900">Send Email</h2>
+          </div>
+          <button onClick={onClose} className="text-surface-400 hover:text-surface-600">
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+
+        <div className="p-4 space-y-3">
+          <div>
+            <p className="label mb-1">To</p>
+            <p className="text-sm font-mono text-surface-700 bg-surface-50 rounded-lg px-3 py-2 border border-surface-200">
+              {client.name} &lt;{client.email}&gt;
+            </p>
+          </div>
+          <div>
+            <p className="label mb-1">Subject</p>
+            <input
+              className="input w-full"
+              placeholder="e.g. Invoice reminder — INV-2025-002"
+              value={subject}
+              onChange={(e) => setSubject(e.target.value)}
+            />
+          </div>
+          <div>
+            <p className="label mb-1">Message</p>
+            <textarea
+              className="input w-full resize-none"
+              rows={6}
+              placeholder={`Hi ${client.name.split(" ")[0]},\n\n`}
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+            />
+          </div>
+
+          {status === "sent" && (
+            <p className="text-sm text-emerald-600 flex items-center gap-2">
+              <Check className="h-4 w-4" /> Email sent to {client.email}
+            </p>
+          )}
+          {status === "error" && (
+            <p className="text-sm text-red-600 flex items-center gap-2">
+              <AlertCircle className="h-4 w-4" /> Failed to send — check RESEND_API_KEY
+            </p>
+          )}
+        </div>
+
+        <div className="flex justify-end gap-2 p-4 border-t border-surface-200">
+          <button onClick={onClose} className="btn-secondary text-sm">Cancel</button>
+          <button
+            onClick={handleSend}
+            disabled={!subject || !message || status === "sending" || status === "sent"}
+            className="btn-primary text-sm flex items-center gap-2 disabled:opacity-50"
+          >
+            <Send className="h-3.5 w-3.5" />
+            {status === "sending" ? "Sending…" : status === "sent" ? "Sent!" : "Send Email"}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function ClientDetailPage() {
   const params = useParams()
   const clientId = params.id as string
   const [activeTab, setActiveTab] = useState<TabKey>("profile")
+  const [showEmailModal, setShowEmailModal] = useState(false)
 
   const { data: client, loading: clientLoading } = useApi<Client | null>(`/api/clients/${clientId}`, null)
   const { data: proposals = [] } = useApi<Proposal[]>("/api/proposals", [])
@@ -91,9 +184,9 @@ export default function ClientDetailPage() {
   const clientApiKeys = apiKeys.filter((k) => k.clientId === client.id)
   const clientTokenUsage = tokenUsage.filter((t) => t.clientId === client.id)
 
-  const totalInvoiced = clientInvoices.reduce((sum, i) => sum + i.total, 0)
-  const totalPaid = clientInvoices.reduce((sum, i) => sum + i.amountPaid, 0)
-  const totalDue = clientInvoices.reduce((sum, i) => sum + i.amountDue, 0)
+  const totalInvoiced = clientInvoices.reduce((sum, i) => sum + (parseFloat(String(i.total)) || 0), 0)
+  const totalPaid = clientInvoices.reduce((sum, i) => sum + (parseFloat(String(i.amountPaid)) || 0), 0)
+  const totalDue = clientInvoices.reduce((sum, i) => sum + (parseFloat(String(i.amountDue)) || 0), 0)
 
   const initials = (client?.name || "")
     .split(" ")
@@ -102,9 +195,11 @@ export default function ClientDetailPage() {
     .slice(0, 2)
 
   return (
+    <>
+    {showEmailModal && <EmailModal client={client} onClose={() => setShowEmailModal(false)} />}
     <div className="flex h-[calc(100vh-3.5rem)] bg-surface-50">
-      {/* Left Sidebar */}
-      <div className="w-52 border-r border-surface-200 bg-white overflow-y-auto">
+      {/* Left Sidebar — desktop only */}
+      <div className="hidden md:block w-52 border-r border-surface-200 bg-white overflow-y-auto">
         <div className="sticky top-0 bg-white border-b border-surface-200 p-4">
           <Link href="/clients" className="flex items-center gap-2 text-sm text-surface-600 hover:text-surface-800 mb-4">
             <ArrowLeft className="h-4 w-4" /> Back
@@ -144,19 +239,49 @@ export default function ClientDetailPage() {
 
       {/* Main Content */}
       <div className="flex-1 overflow-y-auto">
-        <div className="p-6 max-w-6xl">
-          <div className="mb-6">
+        <div className="p-4 md:p-6 max-w-6xl">
+          <div className="mb-4 md:mb-6">
             <Link href="/clients" className="flex items-center gap-2 text-sm text-surface-500 hover:text-surface-700 mb-3">
               <ArrowLeft className="h-4 w-4" /> Clients
             </Link>
-            <h1 className="text-3xl font-bold text-surface-900">{client?.name}</h1>
+            <h1 className="text-2xl md:text-3xl font-bold text-surface-900">{client?.name}</h1>
             <p className="text-surface-500 mt-1">{client?.company}</p>
+          </div>
+
+          {/* Mobile tab dropdown */}
+          <div className="md:hidden mb-4 relative">
+            <div className="flex items-center justify-between rounded-lg border border-surface-200 bg-white px-3 py-2 shadow-sm">
+              <div className="flex items-center gap-2">
+                {sidebarItems.find(i => i.key === activeTab)?.icon}
+                <span className="text-sm font-medium text-surface-800">
+                  {sidebarItems.find(i => i.key === activeTab)?.label}
+                </span>
+              </div>
+              <ChevronDown className="h-4 w-4 text-surface-400" />
+            </div>
+            <select
+              value={activeTab}
+              onChange={(e) => setActiveTab(e.target.value as TabKey)}
+              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+            >
+              {sidebarItems.map((item) => (
+                <option key={item.key} value={item.key}>{item.label}</option>
+              ))}
+            </select>
           </div>
 
           {/* PROFILE TAB */}
           {activeTab === "profile" && (
             <div className="space-y-6">
-              <div className="grid grid-cols-4 gap-4">
+              <div className="flex justify-end">
+                <button
+                  onClick={() => setShowEmailModal(true)}
+                  className="btn-primary text-sm flex items-center gap-2"
+                >
+                  <Mail className="h-4 w-4" /> Send Email
+                </button>
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="card p-4">
                   <p className="text-2xs text-surface-500 font-medium">Total Revenue</p>
                   <p className="text-2xl font-bold text-surface-900 mt-1">{formatCurrency(totalInvoiced)}</p>
@@ -448,7 +573,7 @@ export default function ClientDetailPage() {
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-4 gap-3 text-2xs">
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-2xs">
                         <div>
                           <p className="text-surface-500">Budget</p>
                           <p className="font-semibold text-surface-800">{formatCurrency(proj.budget)}</p>
@@ -603,7 +728,7 @@ export default function ClientDetailPage() {
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-4 gap-3 text-2xs">
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-2xs">
                         <div>
                           <p className="text-surface-500">Today</p>
                           <p className="font-semibold text-surface-800">{key.requestsToday.toLocaleString()}</p>
@@ -711,5 +836,6 @@ export default function ClientDetailPage() {
         </div>
       </div>
     </div>
+    </>
   )
 }

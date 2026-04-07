@@ -56,7 +56,7 @@ export default function InvoiceDetailPage() {
       />
 
       <div className="p-6 space-y-6">
-        <div className="grid grid-cols-5 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
           <div className="card p-4">
             <p className="text-2xs text-surface-400 mb-1">Total</p>
             <p className="text-lg font-bold text-surface-800">{formatCurrency(inv?.total || 0)}</p>
@@ -94,7 +94,7 @@ export default function InvoiceDetailPage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="col-span-2 space-y-4">
             <div className="card p-4">
               <h3 className="text-xs font-semibold text-surface-700 mb-2">Description</h3>
@@ -103,20 +103,22 @@ export default function InvoiceDetailPage() {
 
             <div className="card">
               <div className="px-4 py-3 border-b border-surface-100"><h3 className="text-xs font-semibold text-surface-700">Line Items</h3></div>
-              <table className="table-compact">
-                <thead><tr><th>Description</th><th className="text-right w-16">Hours</th><th className="text-right w-20">Rate</th><th className="text-right w-24">Amount</th></tr></thead>
-                <tbody>
-                  {inv?.items?.map((item) => (
-                    <tr key={item.id}><td className="text-surface-700">{item.description}</td><td className="text-right text-surface-500">{item.hours}h</td><td className="text-right text-surface-500">{formatCurrency(item.rate)}</td><td className="text-right font-medium text-surface-800">{formatCurrency(item.amount)}</td></tr>
-                  ))}
-                </tbody>
-                <tfoot>
-                  <tr className="border-t border-surface-200"><td colSpan={3} className="text-right font-medium text-surface-600">Subtotal</td><td className="text-right font-bold">{formatCurrency(inv?.subtotal || 0)}</td></tr>
-                  <tr><td colSpan={3} className="text-right font-bold text-surface-700">Total</td><td className="text-right text-lg font-bold text-surface-800">{formatCurrency(inv?.total || 0)}</td></tr>
-                  <tr><td colSpan={3} className="text-right text-emerald-600">Paid</td><td className="text-right font-medium text-emerald-600">-{formatCurrency(inv?.amountPaid || 0)}</td></tr>
-                  <tr className="bg-amber-50"><td colSpan={3} className="text-right font-bold text-amber-700">Amount Due</td><td className="text-right text-lg font-bold text-amber-700">{formatCurrency(inv?.amountDue || 0)}</td></tr>
-                </tfoot>
-              </table>
+              <div className="overflow-x-auto">
+                <table className="table-compact">
+                  <thead><tr><th>Description</th><th className="text-right w-16">Hours</th><th className="text-right w-20">Rate</th><th className="text-right w-24">Amount</th></tr></thead>
+                  <tbody>
+                    {inv?.items?.map((item) => (
+                      <tr key={item.id}><td className="text-surface-700">{item.description}</td><td className="text-right text-surface-500">{item.hours}h</td><td className="text-right text-surface-500">{formatCurrency(item.rate)}</td><td className="text-right font-medium text-surface-800">{formatCurrency(item.amount)}</td></tr>
+                    ))}
+                  </tbody>
+                  <tfoot>
+                    <tr className="border-t border-surface-200"><td colSpan={3} className="text-right font-medium text-surface-600">Subtotal</td><td className="text-right font-bold">{formatCurrency(inv?.subtotal || 0)}</td></tr>
+                    <tr><td colSpan={3} className="text-right font-bold text-surface-700">Total</td><td className="text-right text-lg font-bold text-surface-800">{formatCurrency(inv?.total || 0)}</td></tr>
+                    <tr><td colSpan={3} className="text-right text-emerald-600">Paid</td><td className="text-right font-medium text-emerald-600">-{formatCurrency(inv?.amountPaid || 0)}</td></tr>
+                    <tr className="bg-amber-50"><td colSpan={3} className="text-right font-bold text-amber-700">Amount Due</td><td className="text-right text-lg font-bold text-amber-700">{formatCurrency(inv?.amountDue || 0)}</td></tr>
+                  </tfoot>
+                </table>
+              </div>
             </div>
 
             {/* Payment History */}

@@ -54,7 +54,7 @@ export default function ReportsPage() {
   const revenueByClient = mockClients
     .map((c) => ({
       name: c.name,
-      revenue: mockInvoices.filter((i) => i.client?.id === c.id).reduce((s, i) => s + i.total, 0),
+      revenue: mockInvoices.filter((i) => i.client?.id === c.id).reduce((s, i) => s + (parseFloat(String(i.total)) || 0), 0),
     }))
     .filter((c) => c.revenue > 0)
     .sort((a, b) => b.revenue - a.revenue)
@@ -77,7 +77,7 @@ export default function ReportsPage() {
     proposals: mockProposals.filter((p) => p.client?.id === c.id).length,
     invoices: mockInvoices.filter((i) => i.client?.id === c.id).length,
     payments: mockPayments.filter((p) => p.client?.id === c.id).length,
-    revenue: mockInvoices.filter((i) => i.client?.id === c.id).reduce((s, i) => s + i.total, 0),
+    revenue: mockInvoices.filter((i) => i.client?.id === c.id).reduce((s, i) => s + (parseFloat(String(i.total)) || 0), 0),
   }))
 
   // Token usage (placeholder if no dedicated endpoint)
@@ -93,11 +93,11 @@ export default function ReportsPage() {
     <div>
       <Header title="Reports" subtitle="Financial reports and analytics" />
 
-      <div className="p-6 space-y-6">
+      <div className="p-4 md:p-6 space-y-6">
         {/* Financial Reports */}
         <div>
           <h2 className="text-sm font-semibold text-surface-800 mb-3">Financial Reports</h2>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Revenue */}
             <div className="card p-5">
               <h3 className="text-xs font-semibold text-surface-700 mb-1">Revenue Report</h3>
@@ -208,7 +208,7 @@ export default function ReportsPage() {
         {/* Sales Reports */}
         <div>
           <h2 className="text-sm font-semibold text-surface-800 mb-3">Sales Reports</h2>
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {/* Proposals */}
             <div className="card p-5">
               <h3 className="text-xs font-semibold text-surface-700 mb-1">Proposals</h3>
@@ -274,6 +274,7 @@ export default function ReportsPage() {
               <h3 className="text-xs font-semibold text-surface-700">Client Activity</h3>
               <p className="text-2xs text-surface-400">Proposals, invoices, and payments per client</p>
             </div>
+            <div className="overflow-x-auto">
             <table className="table-compact">
               <thead>
                 <tr><th>Client</th><th className="text-center">Proposals</th><th className="text-center">Invoices</th><th className="text-center">Payments</th><th className="text-right">Revenue</th></tr>
@@ -290,6 +291,7 @@ export default function ReportsPage() {
                 ))}
               </tbody>
             </table>
+            </div>
           </div>
 
           {/* AI/API Usage */}
@@ -304,6 +306,7 @@ export default function ReportsPage() {
               <div className="bg-purple-50 rounded-md p-3"><p className="text-2xs text-surface-500">Output Tokens</p><p className="text-lg font-bold text-purple-600">{(totalOutputTokens / 1_000_000).toFixed(1)}M</p></div>
               <div className="bg-amber-50 rounded-md p-3"><p className="text-2xs text-surface-500">API Requests</p><p className="text-lg font-bold text-amber-600">{(totalApiRequests / 1000).toFixed(0)}K</p></div>
             </div>
+            <div className="overflow-x-auto">
             <table className="table-compact">
               <thead>
                 <tr><th>Client</th><th className="text-right">Input Tokens</th><th className="text-right">Output Tokens</th><th className="text-right">Cost</th></tr>
@@ -319,6 +322,7 @@ export default function ReportsPage() {
                 ))}
               </tbody>
             </table>
+            </div>
           </div>
         </div>
       </div>

@@ -5,7 +5,8 @@ import { Header } from "@/components/dashboard/header"
 import { useApi, apiMutate } from "@/hooks/use-api"
 import type { Payment, Invoice, Client, BankAccount } from "@/types"
 import { formatCurrency, formatDate, getStatusColor } from "@/lib/utils"
-import { Pencil, Trash2, MoreHorizontal, Eye } from "lucide-react"
+import { Pencil, Trash2, MoreHorizontal, Eye, ArrowDownLeft, Clock, CreditCard } from "lucide-react"
+import { StatCard } from "@/components/ui/stat-card"
 
 type PaymentData = Payment
 
@@ -34,8 +35,8 @@ export default function PaymentsPage() {
   const mockClients = clients
   const mockBankAccounts = bankAccounts
 
-  const totalReceived = mockPayments.filter(p => p.status === "COMPLETED").reduce((s, p) => s + p.amount, 0)
-  const totalPending = mockPayments.filter(p => p.status === "PENDING").reduce((s, p) => s + p.amount, 0)
+  const totalReceived = mockPayments.filter(p => p.status === "COMPLETED").reduce((s, p) => s + (parseFloat(String(p.amount)) || 0), 0)
+  const totalPending = mockPayments.filter(p => p.status === "PENDING").reduce((s, p) => s + (parseFloat(String(p.amount)) || 0), 0)
 
   const openEdit = (payment: PaymentData) => {
     setEditingPayment(payment)
@@ -67,14 +68,15 @@ export default function PaymentsPage() {
     <div>
       <Header title="Payments" subtitle="Payment receivables and transactions" action={{ label: "Record Payment", href: "/payments/new" }} />
 
-      <div className="p-6 space-y-4">
-        <div className="grid grid-cols-3 gap-3">
-          <div className="card p-3"><p className="text-2xs text-surface-400">Total Received</p><p className="text-lg font-semibold text-emerald-600">{formatCurrency(totalReceived)}</p></div>
-          <div className="card p-3"><p className="text-2xs text-surface-400">Pending</p><p className="text-lg font-semibold text-amber-600">{formatCurrency(totalPending)}</p></div>
-          <div className="card p-3"><p className="text-2xs text-surface-400">Transactions</p><p className="text-lg font-semibold">{payments.length}</p></div>
+      <div className="p-4 md:p-6 space-y-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <StatCard title="Total Received" value={formatCurrency(totalReceived)} icon={ArrowDownLeft} iconColor="text-emerald-600" />
+          <StatCard title="Pending" value={formatCurrency(totalPending)} icon={Clock} iconColor="text-amber-600" />
+          <StatCard title="Transactions" value={String(payments.length)} icon={CreditCard} iconColor="text-brand-600" />
         </div>
 
         <div className="card">
+          <div className="overflow-x-auto">
           <table className="table-compact">
             <thead>
               <tr>
@@ -99,7 +101,7 @@ export default function PaymentsPage() {
                   <td className="text-right font-semibold text-emerald-600">{formatCurrency(payment.amount)}</td>
                   <td>{formatDate(payment.receivedAt)}</td>
                   <td>
-                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="flex items-center gap-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
                       <button onClick={() => openEdit(payment)} className="rounded p-1 hover:bg-surface-100" title="Edit">
                         <Pencil className="h-3.5 w-3.5 text-surface-500" />
                       </button>
@@ -112,6 +114,7 @@ export default function PaymentsPage() {
               ))}
             </tbody>
           </table>
+          </div>
         </div>
       </div>
 

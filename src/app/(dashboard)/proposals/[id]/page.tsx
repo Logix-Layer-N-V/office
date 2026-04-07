@@ -62,7 +62,7 @@ export default function ProposalDetailPage() {
 
       <div className="p-6 space-y-6">
         {/* Status & Meta */}
-        <div className="grid grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div className="card p-4">
             <p className="text-2xs text-surface-400 mb-1">Total Value</p>
             <p className="text-lg font-bold text-surface-800">{formatCurrency(p?.total || 0)}</p>
@@ -81,7 +81,7 @@ export default function ProposalDetailPage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* Main Content */}
           <div className="col-span-2 space-y-4">
             {/* Description */}
@@ -95,42 +95,44 @@ export default function ProposalDetailPage() {
               <div className="px-4 py-3 border-b border-surface-100">
                 <h3 className="text-xs font-semibold text-surface-700">Line Items</h3>
               </div>
-              <table className="table-compact">
-                <thead>
-                  <tr>
-                    <th>Description</th>
-                    <th className="text-right w-16">Hours</th>
-                    <th className="text-right w-20">Rate</th>
-                    <th className="text-right w-24">Amount</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {p?.items?.map((item) => (
-                    <tr key={item.id}>
-                      <td className="text-surface-700">{item.description}</td>
-                      <td className="text-right text-surface-500">{item.hours}h</td>
-                      <td className="text-right text-surface-500">{formatCurrency(item.rate)}</td>
-                      <td className="text-right font-medium text-surface-800">{formatCurrency(item.amount)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-                <tfoot>
-                  <tr className="border-t border-surface-200">
-                    <td colSpan={3} className="text-right font-medium text-surface-600">Subtotal</td>
-                    <td className="text-right font-bold text-surface-800">{formatCurrency(p?.subtotal || 0)}</td>
-                  </tr>
-                  {(p?.taxRate || 0) > 0 && (
+              <div className="overflow-x-auto">
+                <table className="table-compact">
+                  <thead>
                     <tr>
-                      <td colSpan={3} className="text-right text-surface-500">Tax ({p?.taxRate}%)</td>
-                      <td className="text-right text-surface-700">{formatCurrency(p?.taxAmount || 0)}</td>
+                      <th>Description</th>
+                      <th className="text-right w-16">Hours</th>
+                      <th className="text-right w-20">Rate</th>
+                      <th className="text-right w-24">Amount</th>
                     </tr>
-                  )}
-                  <tr className="bg-surface-50">
-                    <td colSpan={3} className="text-right font-bold text-surface-700">Total</td>
-                    <td className="text-right text-lg font-bold text-surface-800">{formatCurrency(p?.total || 0)}</td>
-                  </tr>
-                </tfoot>
-              </table>
+                  </thead>
+                  <tbody>
+                    {p?.items?.map((item) => (
+                      <tr key={item.id}>
+                        <td className="text-surface-700">{item.description}</td>
+                        <td className="text-right text-surface-500">{item.hours}h</td>
+                        <td className="text-right text-surface-500">{formatCurrency(item.rate)}</td>
+                        <td className="text-right font-medium text-surface-800">{formatCurrency(item.amount)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                  <tfoot>
+                    <tr className="border-t border-surface-200">
+                      <td colSpan={3} className="text-right font-medium text-surface-600">Subtotal</td>
+                      <td className="text-right font-bold text-surface-800">{formatCurrency(p?.subtotal || 0)}</td>
+                    </tr>
+                    {(p?.taxRate || 0) > 0 && (
+                      <tr>
+                        <td colSpan={3} className="text-right text-surface-500">Tax ({p?.taxRate}%)</td>
+                        <td className="text-right text-surface-700">{formatCurrency(p?.taxAmount || 0)}</td>
+                      </tr>
+                    )}
+                    <tr className="bg-surface-50">
+                      <td colSpan={3} className="text-right font-bold text-surface-700">Total</td>
+                      <td className="text-right text-lg font-bold text-surface-800">{formatCurrency(p?.total || 0)}</td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
             </div>
           </div>
 

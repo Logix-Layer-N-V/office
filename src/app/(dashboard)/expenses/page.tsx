@@ -7,6 +7,8 @@ import { Modal } from "@/components/ui/modal"
 import { useApi } from "@/hooks/use-api"
 import type { Expense } from "@/types"
 import { formatCurrency, formatDate, getStatusColor } from "@/lib/utils"
+import { StatCard } from "@/components/ui/stat-card"
+import { TrendingDown } from "lucide-react"
 
 export default function ExpensesPage() {
   const [showCreate, setShowCreate] = useState(false)
@@ -25,7 +27,7 @@ export default function ExpensesPage() {
 
   const mockExpenses = expenses
 
-  const totalExpenses = mockExpenses.reduce((s, e) => s + e.amount, 0)
+  const totalExpenses = mockExpenses.reduce((s, e) => s + (parseFloat(String(e.amount)) || 0), 0)
   const byCategory = mockExpenses.reduce((acc, e) => {
     acc[e.category] = (acc[e.category] || 0) + e.amount
     return acc
@@ -44,15 +46,11 @@ export default function ExpensesPage() {
     <div>
       <Header title="Expenses" subtitle="Track and categorize expenses" action={{ label: "Add Expense", onClick: () => setShowCreate(true) }} />
 
-      <div className="p-6 space-y-4">
-        <div className="grid grid-cols-2 gap-4">
+      <div className="p-4 md:p-6 space-y-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <StatCard title="Total Expenses" value={formatCurrency(totalExpenses)} subtitle="This period" icon={TrendingDown} iconColor="text-red-500" />
           <div className="card p-4">
-            <p className="text-2xs text-surface-400 uppercase tracking-wider">Total Expenses</p>
-            <p className="text-2xl font-bold text-red-500">{formatCurrency(totalExpenses)}</p>
-            <p className="text-2xs text-surface-400 mt-1">This period</p>
-          </div>
-          <div className="card p-4">
-            <p className="text-2xs text-surface-400 uppercase tracking-wider mb-2">By Category</p>
+            <p className="text-2xs font-medium uppercase tracking-wider text-surface-400 mb-2">By Category</p>
             <div className="space-y-1.5">
               {Object.entries(byCategory).sort((a, b) => b[1] - a[1]).slice(0, 4).map(([cat, amt]) => (
                 <div key={cat} className="flex items-center justify-between">
@@ -72,13 +70,13 @@ export default function ExpensesPage() {
       <Modal open={showCreate} onClose={() => setShowCreate(false)} title="Add Expense">
         <form className="space-y-4">
           <div><label className="label">Description</label><input type="text" className="input" placeholder="What was this expense for?" /></div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div><label className="label">Amount (USD)</label><input type="number" className="input" step="0.01" /></div>
             <div><label className="label">Category</label>
               <select className="input"><option>Software</option><option>Hardware</option><option>Office</option><option>Travel</option><option>Marketing</option><option>Salary</option><option>Contractor</option><option>Utilities</option><option>Other</option></select>
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div><label className="label">Vendor</label><input type="text" className="input" placeholder="Company name" /></div>
             <div><label className="label">Date</label><input type="date" className="input" /></div>
           </div>

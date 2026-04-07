@@ -6,6 +6,8 @@ import { Modal } from "@/components/ui/modal"
 import { useApi } from "@/hooks/use-api"
 import type { Loan } from "@/types"
 import { formatCurrency, formatDate, getStatusColor, calcPercentage } from "@/lib/utils"
+import { StatCard } from "@/components/ui/stat-card"
+import { Landmark, CalendarClock } from "lucide-react"
 
 export default function LoansPage() {
   const [showAdd, setShowAdd] = useState(false)
@@ -24,17 +26,17 @@ export default function LoansPage() {
 
   const mockLoans = loans
 
-  const totalDebt = mockLoans.reduce((s, l) => s + l.remainingBalance, 0)
-  const monthlyTotal = mockLoans.reduce((s, l) => s + l.monthlyPayment, 0)
+  const totalDebt = mockLoans.reduce((s, l) => s + (parseFloat(String(l.remainingBalance)) || 0), 0)
+  const monthlyTotal = mockLoans.reduce((s, l) => s + (parseFloat(String(l.monthlyPayment)) || 0), 0)
 
   return (
     <div>
       <Header title="Loans" subtitle="Track loans and repayment schedules" action={{ label: "Add Loan", onClick: () => setShowAdd(true) }} />
 
-      <div className="p-6 space-y-4">
-        <div className="grid grid-cols-2 gap-3">
-          <div className="card p-4"><p className="text-2xs text-surface-400 uppercase tracking-wider">Total Outstanding</p><p className="text-2xl font-bold text-surface-800">{formatCurrency(totalDebt)}</p></div>
-          <div className="card p-4"><p className="text-2xs text-surface-400 uppercase tracking-wider">Monthly Payments</p><p className="text-2xl font-bold text-amber-600">{formatCurrency(monthlyTotal)}</p></div>
+      <div className="p-4 md:p-6 space-y-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <StatCard title="Total Outstanding" value={formatCurrency(totalDebt)} icon={Landmark} iconColor="text-surface-600" />
+          <StatCard title="Monthly Payments" value={formatCurrency(monthlyTotal)} icon={CalendarClock} iconColor="text-amber-600" />
         </div>
 
         <div className="space-y-3">
@@ -49,7 +51,7 @@ export default function LoansPage() {
                   </div>
                   <span className={getStatusColor(loan.status)}>{loan.status}</span>
                 </div>
-                <div className="grid grid-cols-4 gap-4 text-center mb-3">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center mb-3">
                   <div><p className="text-2xs text-surface-400">Original</p><p className="text-xs font-semibold">{formatCurrency(loan.amount)}</p></div>
                   <div><p className="text-2xs text-surface-400">Remaining</p><p className="text-xs font-semibold text-amber-600">{formatCurrency(loan.remainingBalance)}</p></div>
                   <div><p className="text-2xs text-surface-400">Monthly</p><p className="text-xs font-semibold">{formatCurrency(loan.monthlyPayment)}</p></div>

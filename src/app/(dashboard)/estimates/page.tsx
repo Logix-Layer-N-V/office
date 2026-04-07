@@ -32,7 +32,7 @@ export default function EstimatesPage() {
     { key: "title", label: "Title", render: (r: Estimate) => (
       <a href={`/estimates/${r.id}`} className="text-surface-700 hover:text-brand-600">{r.title}</a>
     )},
-    { key: "client", label: "Client" },
+    { key: "client", label: "Client", render: (r: Estimate) => r.client?.name || "-" },
     { key: "status", label: "Status", render: (r: Estimate) => (
       <span className={getStatusColor(r.status)}>{r.status}</span>
     )},
@@ -53,7 +53,7 @@ export default function EstimatesPage() {
     <div>
       <Header title="Estimates" subtitle="Create estimates and convert to invoices" action={{ label: "New Estimate", href: "/estimates/new" }} />
 
-      <div className="p-6 space-y-4">
+      <div className="p-4 md:p-6 space-y-4">
         <div className="card">
           <div className="flex items-center justify-between px-4 py-3 border-b border-surface-100">
             <div className="flex gap-1">

@@ -11,17 +11,19 @@ interface StatCardProps {
   title: string
   value: string
   change?: { value: string; positive: boolean }
-  icon: LucideIcon
+  icon?: LucideIcon
   iconColor?: string
+  subtitle?: string
 }
 
-export function StatCard({ title, value, change, icon: Icon, iconColor = "text-brand-600" }: StatCardProps) {
+export function StatCard({ title, value, change, icon: Icon, iconColor = "text-brand-600", subtitle }: StatCardProps) {
   return (
     <div className="card p-4">
       <div className="flex items-start justify-between">
-        <div>
+        <div className="min-w-0 flex-1">
           <p className="text-2xs font-medium uppercase tracking-wider text-surface-400">{title}</p>
           <p className="mt-1 text-lg font-semibold text-surface-800">{value}</p>
+          {subtitle && <p className="text-2xs text-surface-400 mt-0.5">{subtitle}</p>}
           {change && (
             <div className="mt-1 flex items-center gap-1">
               {change.positive ? (
@@ -35,9 +37,11 @@ export function StatCard({ title, value, change, icon: Icon, iconColor = "text-b
             </div>
           )}
         </div>
-        <div className={cn("rounded-md bg-surface-50 p-2", iconColor)}>
-          <Icon className="h-4 w-4" />
-        </div>
+        {Icon && (
+          <div className={cn("rounded-md bg-surface-50 p-2 flex-shrink-0", iconColor)}>
+            <Icon className="h-4 w-4" />
+          </div>
+        )}
       </div>
     </div>
   )

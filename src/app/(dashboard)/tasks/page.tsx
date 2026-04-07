@@ -197,9 +197,9 @@ export default function TasksPage() {
   return (
     <div className="min-h-screen bg-surface-50">
       <Header title="Tasks" action={{ label: "New Task", href: "/tasks/new" }} />
-      <div className="p-6">
+      <div className="p-4 md:p-6">
         {/* Stats Row */}
-        <div className="mb-6 grid grid-cols-4 gap-4">
+        <div className="mb-6 grid grid-cols-2 md:grid-cols-4 gap-4">
           <div className="card p-4">
             <p className="text-2xs font-semibold uppercase text-surface-600">Total Tasks</p>
             <p className="mt-2 text-2xl font-bold text-surface-900">{totalCount}</p>

@@ -6,6 +6,7 @@ import { useApi } from "@/hooks/use-api"
 import type { Proposal, Client } from "@/types"
 import { formatCurrency, formatDate, getStatusColor } from "@/lib/utils"
 import { FileText, Send, Check, X, Clock } from "lucide-react"
+import { StatCard } from "@/components/ui/stat-card"
 
 export default function ProposalsPage() {
   const { data: proposals, loading } = useApi<Proposal[]>("/api/proposals", [])
@@ -32,7 +33,7 @@ export default function ProposalsPage() {
     { key: "title", label: "Title", render: (r: Proposal) => (
       <a href={`/proposals/${r.id}`} className="text-surface-700 hover:text-brand-600">{r.title}</a>
     )},
-    { key: "client", label: "Client" },
+    { key: "client", label: "Client", render: (r: Proposal) => r.client?.name || "-" },
     { key: "status", label: "Status", render: (r: Proposal) => (
       <span className={getStatusColor(r.status)}>{r.status}</span>
     )},
@@ -47,30 +48,20 @@ export default function ProposalsPage() {
     total: mockProposals.length,
     approved: mockProposals.filter(p => p.status === "APPROVED").length,
     pending: mockProposals.filter(p => p.status === "SENT").length,
-    value: mockProposals.reduce((s, p) => s + p.total, 0),
+    value: mockProposals.reduce((s, p) => s + parseFloat(String(p.total) || "0"), 0),
   }
 
   return (
     <div>
       <Header title="Proposals" subtitle="Create and manage client proposals" action={{ label: "New Proposal", href: "/proposals/new" }} />
 
-      <div className="p-6 space-y-4">
+      <div className="p-4 md:p-6 space-y-4">
         {/* Quick stats */}
-        <div className="grid grid-cols-4 gap-3">
-          {[
-            { label: "Total", value: stats.total, icon: FileText, color: "text-surface-600" },
-            { label: "Approved", value: stats.approved, icon: Check, color: "text-emerald-600" },
-            { label: "Pending", value: stats.pending, icon: Clock, color: "text-amber-600" },
-            { label: "Total Value", value: formatCurrency(stats.value), icon: FileText, color: "text-brand-600" },
-          ].map((s) => (
-            <div key={s.label} className="card flex items-center gap-3 p-3">
-              <s.icon className={`h-4 w-4 ${s.color}`} />
-              <div>
-                <p className="text-2xs text-surface-400">{s.label}</p>
-                <p className="text-sm font-semibold text-surface-800">{s.value}</p>
-              </div>
-            </div>
-          ))}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <StatCard title="Total" value={String(stats.total)} icon={FileText} iconColor="text-surface-600" />
+          <StatCard title="Approved" value={String(stats.approved)} icon={Check} iconColor="text-emerald-600" />
+          <StatCard title="Pending" value={String(stats.pending)} icon={Clock} iconColor="text-amber-600" />
+          <StatCard title="Total Value" value={formatCurrency(stats.value)} icon={FileText} iconColor="text-brand-600" />
         </div>
 
         {/* Table */}

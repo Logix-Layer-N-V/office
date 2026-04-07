@@ -5,7 +5,8 @@ import { Header } from "@/components/dashboard/header"
 import { useApi } from "@/hooks/use-api"
 import type { Client, Invoice } from "@/types"
 import { formatCurrency, formatDate, getStatusColor } from "@/lib/utils"
-import { Mail, Phone, MapPin, Search, Plus, Users } from "lucide-react"
+import { Mail, Phone, MapPin, Search, Plus, Users, DollarSign, TrendingUp, UserCheck } from "lucide-react"
+import { StatCard } from "@/components/ui/stat-card"
 
 export default function ClientsPage() {
   const [view, setView] = useState<"grid" | "list">("grid")
@@ -46,23 +47,11 @@ export default function ClientsPage() {
       <Header title="Clients" subtitle="Manage your client relationships" action={{ label: "Add Client", href: "/clients/new" }} />
 
       <div className="p-6 space-y-4">
-        <div className="grid grid-cols-4 gap-3">
-          <div className="card p-3">
-            <p className="text-2xs text-surface-400">Total Clients</p>
-            <p className="text-lg font-semibold text-surface-800">{clients.length}</p>
-          </div>
-          <div className="card p-3">
-            <p className="text-2xs text-surface-400">Active</p>
-            <p className="text-lg font-semibold text-emerald-600">{activeClients}</p>
-          </div>
-          <div className="card p-3">
-            <p className="text-2xs text-surface-400">Total Revenue</p>
-            <p className="text-lg font-semibold text-surface-800">{formatCurrency(totalRevenue)}</p>
-          </div>
-          <div className="card p-3">
-            <p className="text-2xs text-surface-400">Avg. per Client</p>
-            <p className="text-lg font-semibold text-surface-800">{formatCurrency(totalRevenue / (activeClients || 1))}</p>
-          </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <StatCard title="Total Clients" value={String(clients.length)} icon={Users} iconColor="text-brand-600" />
+          <StatCard title="Active" value={String(activeClients)} icon={UserCheck} iconColor="text-emerald-600" />
+          <StatCard title="Total Revenue" value={formatCurrency(totalRevenue)} icon={DollarSign} iconColor="text-emerald-600" />
+          <StatCard title="Avg. per Client" value={formatCurrency(totalRevenue / (activeClients || 1))} icon={TrendingUp} iconColor="text-brand-600" />
         </div>
 
         {/* Search + filter + view toggle */}
@@ -110,7 +99,7 @@ export default function ClientsPage() {
             )}
           </div>
         ) : view === "grid" ? (
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {filtered.map((client) => (
               <a key={client.id} href={`/clients/${client.id}`} className="card p-4 hover:border-brand-200 transition-colors block">
                 <div className="flex items-start justify-between mb-3">

@@ -24,8 +24,10 @@ export function formatCurrency(amount: number | string, currency = "USD"): strin
 }
 
 // --- Date formatting ---
-export function formatDate(date: Date | string): string {
+export function formatDate(date: Date | string | null | undefined): string {
+  if (!date) return "-"
   const d = typeof date === "string" ? new Date(date) : date
+  if (isNaN(d.getTime())) return "-"
   return new Intl.DateTimeFormat("en-US", {
     month: "short",
     day: "numeric",
@@ -33,8 +35,10 @@ export function formatDate(date: Date | string): string {
   }).format(d)
 }
 
-export function formatDateShort(date: Date | string): string {
+export function formatDateShort(date: Date | string | null | undefined): string {
+  if (!date) return "-"
   const d = typeof date === "string" ? new Date(date) : date
+  if (isNaN(d.getTime())) return "-"
   return new Intl.DateTimeFormat("en-US", {
     month: "short",
     day: "numeric",

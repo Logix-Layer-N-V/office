@@ -69,9 +69,9 @@ export default function ProjectsPage() {
   return (
     <div className="min-h-screen bg-surface-50">
       <Header title="Projects" action={{ label: "Add Project", href: "/projects/new" }} />
-      <div className="p-6">
+      <div className="p-4 md:p-6">
         {/* Stats Cards */}
-        <div className="mb-8 grid grid-cols-4 gap-4">
+        <div className="mb-8 grid grid-cols-2 md:grid-cols-4 gap-4">
           <div className="card p-4">
             <p className="text-2xs uppercase tracking-wider text-surface-500">Total Projects</p>
             <p className="mt-2 text-3xl font-bold text-surface-800">{stats.total}</p>

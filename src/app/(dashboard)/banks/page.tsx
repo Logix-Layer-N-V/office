@@ -360,9 +360,9 @@ export default function BanksPage() {
 
   const bankAccounts = mockBankAccounts.filter(b => b.type !== "CRYPTO")
   const cryptoAccounts = mockBankAccounts.filter(b => b.type === "CRYPTO")
-  const totalBankBalance = bankAccounts.reduce((s, b) => s + b.balance, 0)
-  const totalCryptoBalance = cryptoAccounts.reduce((s, b) => s + b.balance, 0)
-  const totalBalance = mockBankAccounts.reduce((s, b) => s + b.balance, 0)
+  const totalBankBalance = bankAccounts.reduce((s, b) => s + (parseFloat(String(b.balance)) || 0), 0)
+  const totalCryptoBalance = cryptoAccounts.reduce((s, b) => s + (parseFloat(String(b.balance)) || 0), 0)
+  const totalBalance = mockBankAccounts.reduce((s, b) => s + (parseFloat(String(b.balance)) || 0), 0)
 
   const cryptoTx = mockTransactions.filter(tx =>
     cryptoAccounts.some(ca => ca.name === tx.bank)

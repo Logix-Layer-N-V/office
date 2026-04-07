@@ -6,6 +6,7 @@ import { useApi } from "@/hooks/use-api"
 import type { Invoice, Client } from "@/types"
 import { formatCurrency, formatDate, getStatusColor } from "@/lib/utils"
 import { Receipt, DollarSign, Clock, AlertTriangle } from "lucide-react"
+import { StatCard } from "@/components/ui/stat-card"
 
 export default function InvoicesPage() {
   const { data: invoices, loading } = useApi<Invoice[]>("/api/invoices", [])
@@ -25,8 +26,8 @@ export default function InvoicesPage() {
   const mockInvoices = invoices
   const mockClients = clients
 
-  const totalPaid = mockInvoices.filter(i => i.status === "PAID").reduce((s, i) => s + i.total, 0)
-  const totalDue = mockInvoices.reduce((s, i) => s + i.amountDue, 0)
+  const totalPaid = mockInvoices.filter(i => i.status === "PAID").reduce((s, i) => s + (parseFloat(String(i.total)) || 0), 0)
+  const totalDue = mockInvoices.reduce((s, i) => s + (parseFloat(String(i.amountDue)) || 0), 0)
   const overdue = mockInvoices.filter(i => i.status === "OVERDUE").length
 
   const columns = [
@@ -36,7 +37,7 @@ export default function InvoicesPage() {
         <p className="text-2xs text-surface-400">{r.title}</p>
       </div>
     )},
-    { key: "client", label: "Client" },
+    { key: "client", label: "Client", render: (r: Invoice) => r.client?.name || "-" },
     { key: "status", label: "Status", render: (r: Invoice) => (
       <span className={getStatusColor(r.status)}>{r.status}</span>
     )},
@@ -55,24 +56,12 @@ export default function InvoicesPage() {
     <div>
       <Header title="Invoices" subtitle="Track and manage all invoices" action={{ label: "New Invoice", href: "/invoices/new" }} />
 
-      <div className="p-6 space-y-4">
-        <div className="grid grid-cols-4 gap-3">
-          <div className="card flex items-center gap-3 p-3">
-            <Receipt className="h-4 w-4 text-surface-500" />
-            <div><p className="text-2xs text-surface-400">Total Invoices</p><p className="text-sm font-semibold">{mockInvoices.length}</p></div>
-          </div>
-          <div className="card flex items-center gap-3 p-3">
-            <DollarSign className="h-4 w-4 text-emerald-600" />
-            <div><p className="text-2xs text-surface-400">Paid</p><p className="text-sm font-semibold text-emerald-600">{formatCurrency(totalPaid)}</p></div>
-          </div>
-          <div className="card flex items-center gap-3 p-3">
-            <Clock className="h-4 w-4 text-amber-600" />
-            <div><p className="text-2xs text-surface-400">Amount Due</p><p className="text-sm font-semibold text-amber-600">{formatCurrency(totalDue)}</p></div>
-          </div>
-          <div className="card flex items-center gap-3 p-3">
-            <AlertTriangle className="h-4 w-4 text-red-500" />
-            <div><p className="text-2xs text-surface-400">Overdue</p><p className="text-sm font-semibold text-red-600">{overdue}</p></div>
-          </div>
+      <div className="p-4 md:p-6 space-y-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <StatCard title="Total Invoices" value={String(mockInvoices.length)} icon={Receipt} iconColor="text-surface-500" />
+          <StatCard title="Paid" value={formatCurrency(totalPaid)} icon={DollarSign} iconColor="text-emerald-600" />
+          <StatCard title="Amount Due" value={formatCurrency(totalDue)} icon={Clock} iconColor="text-amber-600" />
+          <StatCard title="Overdue" value={String(overdue)} icon={AlertTriangle} iconColor="text-red-500" />
         </div>
 
         <div className="card">

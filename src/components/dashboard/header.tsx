@@ -139,13 +139,13 @@ export function Header({ title, subtitle, action }: HeaderProps) {
           ))}
         </div>
 
-        {/* Center: Global Search */}
-        <div className="flex-1 min-w-0 max-w-xs mx-auto">
+        {/* Center: Global Search — full width on mobile */}
+        <div className="flex-1 min-w-0 md:max-w-xs md:mx-auto">
           <GlobalSearch />
         </div>
 
-        {/* Right: Quick create + Notifications + Profile */}
-        <div className="flex items-center gap-1 flex-shrink-0">
+        {/* Right: Quick create + Notifications + Profile — desktop only */}
+        <div className="hidden md:flex items-center gap-1 flex-shrink-0">
           <QuickCreate />
 
           {/* Notification Bell */}
@@ -321,7 +321,7 @@ export function Header({ title, subtitle, action }: HeaderProps) {
       </div>
 
       {/* Bottom bar: Title + Page action */}
-      <div className="flex items-center justify-between px-6 py-2 border-t border-surface-100">
+      <div className="flex items-center justify-between px-4 py-2 md:px-6 border-t border-surface-100">
         <div>
           <h1 className="text-base font-bold text-surface-800">{title}</h1>
           {subtitle && <p className="text-2xs text-surface-400 mt-0.5">{subtitle}</p>}

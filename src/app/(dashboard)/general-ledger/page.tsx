@@ -104,8 +104,8 @@ export default function GeneralLedgerPage() {
   const chartOfAccounts = accounts
   const ledgerEntries = entries
 
-  const totalDebits = ledgerEntries.reduce((s, e) => s + e.debit, 0)
-  const totalCredits = ledgerEntries.reduce((s, e) => s + e.credit, 0)
+  const totalDebits = ledgerEntries.reduce((s, e) => s + (parseFloat(String(e.debit)) || 0), 0)
+  const totalCredits = ledgerEntries.reduce((s, e) => s + (parseFloat(String(e.credit)) || 0), 0)
 
   const grouped = chartOfAccounts.reduce((acc, a) => {
     if (!acc[a.type]) acc[a.type] = []
@@ -117,7 +117,7 @@ export default function GeneralLedgerPage() {
     <div>
       <Header title="General Ledger" subtitle="Chart of accounts and journal entries" action={{ label: "New Entry", onClick: () => setShowEntry(true) }} />
 
-      <div className="p-6 space-y-4">
+      <div className="p-4 md:p-6 space-y-4">
         {/* Tabs */}
         <div className="flex gap-1 border-b border-surface-200">
           {([["coa", "Chart of Accounts"], ["journal", "Journal Entries"]] as const).map(([key, label]) => (
@@ -192,6 +192,7 @@ export default function GeneralLedgerPage() {
                 </span>
               </div>
             </div>
+            <div className="overflow-x-auto">
             <table className="table-compact">
               <thead>
                 <tr>
@@ -216,13 +217,14 @@ export default function GeneralLedgerPage() {
                 ))}
               </tbody>
             </table>
+            </div>
           </div>
         )}
       </div>
 
       <Modal open={showEntry} onClose={() => setShowEntry(false)} title="New Journal Entry" size="lg">
         <form className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div><label className="label">Date</label><input type="date" className="input" /></div>
             <div><label className="label">Reference</label><input type="text" className="input" placeholder="e.g. PAY-0005" /></div>
           </div>
@@ -230,6 +232,7 @@ export default function GeneralLedgerPage() {
           <div>
             <label className="label">Line Items</label>
             <div className="rounded-md border border-surface-200">
+              <div className="overflow-x-auto">
               <table className="table-compact">
                 <thead><tr><th>Account</th><th className="w-32 text-right">Debit</th><th className="w-32 text-right">Credit</th></tr></thead>
                 <tbody>
@@ -245,6 +248,7 @@ export default function GeneralLedgerPage() {
                   </tr>
                 </tbody>
               </table>
+              </div>
             </div>
             <button type="button" className="btn-ghost mt-2 text-2xs">+ Add line</button>
           </div>

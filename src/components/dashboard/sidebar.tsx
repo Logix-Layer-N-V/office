@@ -11,15 +11,17 @@ import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { navigation } from "@/constants/navigation"
 import { LogixLogo } from "@/components/ui/logix-logo"
-import { ChevronLeft, ChevronDown, ChevronRight } from "lucide-react"
+import { ChevronLeft, ChevronDown, ChevronRight, X } from "lucide-react"
 import { useState, useEffect } from "react"
 
 interface SidebarProps {
   collapsed: boolean
   onToggle: () => void
+  mobileOpen?: boolean
+  onMobileClose?: () => void
 }
 
-export function Sidebar({ collapsed, onToggle }: SidebarProps) {
+export function Sidebar({ collapsed, onToggle, mobileOpen = false, onMobileClose }: SidebarProps) {
   const pathname = usePathname()
 
   // Track which nav groups are open (default: all open)
@@ -65,8 +67,13 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
   return (
     <aside
       className={cn(
-        "fixed left-0 top-0 z-40 flex h-screen flex-col border-r border-surface-200 bg-white transition-all duration-200",
-        collapsed ? "w-16" : "w-56"
+        "fixed left-0 top-0 z-50 flex h-screen flex-col border-r border-surface-200 bg-white transition-all duration-200",
+        // Desktop: always visible, collapsible
+        "md:translate-x-0",
+        collapsed ? "md:w-16" : "md:w-56",
+        // Mobile: full-width drawer, slide in/out
+        "w-72",
+        mobileOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
       )}
     >
       {/* Logo */}
@@ -83,9 +90,18 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
             </div>
           </div>
         )}
+        {/* Mobile close button */}
+        <button
+          onClick={onMobileClose}
+          className="rounded p-1 text-surface-400 hover:bg-surface-100 hover:text-surface-600 md:hidden"
+          aria-label="Close navigation"
+        >
+          <X className="h-4 w-4" />
+        </button>
+        {/* Desktop collapse button */}
         <button
           onClick={onToggle}
-          className="rounded p-1 text-surface-400 hover:bg-surface-100 hover:text-surface-600"
+          className="hidden md:flex rounded p-1 text-surface-400 hover:bg-surface-100 hover:text-surface-600"
           title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
         >
           {collapsed ? (
@@ -164,6 +180,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
                       <li key={item.href}>
                         <Link
                           href={item.href}
+                          onClick={onMobileClose}
                           className={cn(
                             "flex items-center rounded-md text-xs font-medium transition-colors",
                             collapsed

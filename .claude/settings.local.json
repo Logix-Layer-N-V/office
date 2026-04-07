@@ -3,7 +3,10 @@
     "allow": [
       "mcp__Claude_Preview__preview_start",
       "Bash(npm install:*)",
-      "Bash(npm uninstall:*)"
+      "Bash(npm uninstall:*)",
+      "Bash(find \"D:\\\\apps lab\\\\Logix Layer Fin Department\\\\Logix Layer Fin Department\\\\src\\\\app\\\\\\(dashboard\\)\" -name \"*.tsx\")",
+      "Bash(find \"D:\\\\apps lab\\\\Logix Layer Fin Department\\\\Logix Layer Fin Department\\\\src\\\\app\\\\\\(dashboard\\)\" -maxdepth 1 -name \"*.tsx\")",
+      "Bash(npm run:*)"
     ]
   }
 }
