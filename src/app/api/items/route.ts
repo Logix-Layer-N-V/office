@@ -19,10 +19,20 @@ export async function POST(req: Request) {
     const body = await req.json()
     const [item] = await db
       .insert(items)
-      .values({ id: crypto.randomUUID(), ...body })
+      .values({
+        id: crypto.randomUUID(),
+        name: body.name,
+        type: body.type,
+        description: body.description || null,
+        unit: body.unit || "hour",
+        rate: body.rate ? String(body.rate) : "65",
+        isActive: body.isActive ?? true,
+        organizationId: body.organizationId || "org_default",
+      })
       .returning()
     return NextResponse.json(item, { status: 201 })
-  } catch {
+  } catch (err) {
+    console.error("Item POST error:", err)
     return NextResponse.json({ error: "Failed to create item" }, { status: 500 })
   }
 }
