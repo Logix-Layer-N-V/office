@@ -4,9 +4,10 @@ import { useState, useMemo } from "react";
 import Link from "next/link";
 import { LayoutGrid, List, BarChart3, Clock } from "lucide-react";
 import { Header } from "@/components/dashboard/header";
-import { useApi } from "@/hooks/use-api";
+import { useApi, apiMutate } from "@/hooks/use-api";
 import type { Project, ProjectStatus } from "@/types";
 import { formatCurrency, formatDate, getStatusColor } from "@/lib/utils";
+import { GripVertical } from "lucide-react";
 
 type ViewMode = "list" | "kanban" | "gantt" | "timeline";
 type FilterStatus = "ALL" | ProjectStatus;
@@ -38,7 +39,7 @@ const GANTT_COLORS: Record<ProjectStatus, string> = {
 export default function ProjectsPage() {
   const [viewMode, setViewMode] = useState<ViewMode>("list");
   const [filterStatus, setFilterStatus] = useState<FilterStatus>("ALL");
-  const { data: projects, loading } = useApi<Project[]>("/api/projects", []);
+  const { data: projects, loading, refresh } = useApi<Project[]>("/api/projects", []);
 
   const filteredProjects = useMemo(() => {
     if (!projects) return [];
@@ -134,7 +135,7 @@ export default function ProjectsPage() {
 
         {/* View Modes */}
         {viewMode === "list" && <ListView projects={filteredProjects} />}
-        {viewMode === "kanban" && <KanbanView projects={filteredProjects} />}
+        {viewMode === "kanban" && <KanbanView projects={filteredProjects} onRefresh={refresh} />}
         {viewMode === "gantt" && <GanttView projects={filteredProjects} allProjects={projects || []} />}
         {viewMode === "timeline" && <TimelineView projects={filteredProjects} />}
       </div>
@@ -215,7 +216,11 @@ function ListView({ projects }: { projects: Project[] }) {
 }
 
 // KANBAN VIEW
-function KanbanView({ projects }: { projects: Project[] }) {
+function KanbanView({ projects, onRefresh }: { projects: Project[]; onRefresh: () => void }) {
+  const [draggingId, setDraggingId] = useState<string | null>(null)
+  const [dragOverColumn, setDragOverColumn] = useState<ProjectStatus | null>(null)
+  const [updating, setUpdating] = useState<string | null>(null)
+
   const columns = STATUS_ORDER.map((status) => ({
     status,
     projects: projects.filter((p) => p.status === status),
@@ -237,72 +242,151 @@ function KanbanView({ projects }: { projects: Project[] }) {
     return "bg-amber-500"
   }
 
+  const handleDragStart = (e: React.DragEvent, projectId: string) => {
+    setDraggingId(projectId)
+    e.dataTransfer.effectAllowed = "move"
+    e.dataTransfer.setData("text/plain", projectId)
+  }
+
+  const handleDragOver = (e: React.DragEvent, status: ProjectStatus) => {
+    e.preventDefault()
+    e.dataTransfer.dropEffect = "move"
+    setDragOverColumn(status)
+  }
+
+  const handleDragLeave = () => {
+    setDragOverColumn(null)
+  }
+
+  const handleDrop = async (e: React.DragEvent, newStatus: ProjectStatus) => {
+    e.preventDefault()
+    setDragOverColumn(null)
+    const projectId = e.dataTransfer.getData("text/plain")
+    setDraggingId(null)
+
+    const project = projects.find((p) => p.id === projectId)
+    if (!project || project.status === newStatus) return
+
+    setUpdating(projectId)
+    try {
+      await apiMutate(`/api/projects/${projectId}`, "PUT", { status: newStatus })
+      onRefresh()
+    } catch { /* silently */ }
+    setUpdating(null)
+  }
+
+  const handleDragEnd = () => {
+    setDraggingId(null)
+    setDragOverColumn(null)
+  }
+
   return (
     <div className="overflow-x-auto">
       <div className="flex gap-4 pb-4" style={{ minWidth: `${columns.length * 280}px` }}>
-        {columns.map((column) => (
-          <div key={column.status} className="flex-1 min-w-[260px]">
-            {/* Column header */}
-            <div className="flex items-center gap-2 px-1 mb-3">
-              <span className={`h-2 w-2 rounded-full ${STATUS_COLORS[column.status].dot}`} />
-              <h3 className="text-xs font-semibold uppercase tracking-wider text-surface-600">
-                {column.status.replace(/_/g, " ")}
-              </h3>
-              <span className="ml-auto rounded-full bg-surface-100 px-1.5 py-0.5 text-[10px] font-semibold text-surface-500">
-                {column.count}
-              </span>
-            </div>
+        {columns.map((column) => {
+          const isOver = dragOverColumn === column.status
+          return (
+            <div
+              key={column.status}
+              className="flex-1 min-w-[260px]"
+              onDragOver={(e) => handleDragOver(e, column.status)}
+              onDragLeave={handleDragLeave}
+              onDrop={(e) => handleDrop(e, column.status)}
+            >
+              {/* Column header */}
+              <div className="flex items-center gap-2 px-1 mb-3">
+                <span className={`h-2 w-2 rounded-full ${STATUS_COLORS[column.status].dot}`} />
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-surface-600">
+                  {column.status.replace(/_/g, " ")}
+                </h3>
+                <span className="ml-auto rounded-full bg-surface-100 px-1.5 py-0.5 text-[10px] font-semibold text-surface-500">
+                  {column.count}
+                </span>
+              </div>
 
-            {/* Column body */}
-            <div className="space-y-2.5">
-              {column.projects.length === 0 && (
-                <div className="rounded-lg border border-dashed border-surface-200 p-6 text-center">
-                  <p className="text-2xs text-surface-400">No projects</p>
-                </div>
-              )}
-              {column.projects.map((project) => (
-                <Link
-                  key={project.id}
-                  href={`/projects/${project.id}`}
-                  className="block rounded-lg border border-surface-200 bg-white p-3.5 hover:shadow-md hover:border-surface-300 transition-all group"
-                >
-                  {/* Title & client */}
-                  <h4 className="text-sm font-semibold text-surface-800 group-hover:text-brand-700 transition-colors leading-snug">
-                    {project.name}
-                  </h4>
-                  <p className="text-2xs text-surface-500 mt-0.5">{project.client?.name || "—"}</p>
-
-                  {/* Priority badge */}
-                  <div className="mt-2.5 flex items-center gap-1.5">
-                    <span className={`h-1.5 w-1.5 rounded-full ${getPriorityDot(project.priority)}`} />
-                    <span className="text-2xs text-surface-500">{project.priority}</span>
+              {/* Column body — drop zone */}
+              <div className={`space-y-2.5 min-h-[120px] rounded-lg p-1 transition-colors ${
+                isOver ? "bg-brand-50 ring-2 ring-brand-300 ring-inset" : ""
+              }`}>
+                {column.projects.length === 0 && !isOver && (
+                  <div className="rounded-lg border border-dashed border-surface-200 p-6 text-center">
+                    <p className="text-2xs text-surface-400">No projects</p>
                   </div>
+                )}
+                {isOver && column.projects.length === 0 && (
+                  <div className="rounded-lg border-2 border-dashed border-brand-300 bg-brand-50/50 p-6 text-center">
+                    <p className="text-2xs text-brand-500 font-medium">Drop here</p>
+                  </div>
+                )}
+                {column.projects.map((project) => {
+                  const isDragging = draggingId === project.id
+                  const isUpdating = updating === project.id
+                  return (
+                    <div
+                      key={project.id}
+                      draggable
+                      onDragStart={(e) => handleDragStart(e, project.id)}
+                      onDragEnd={handleDragEnd}
+                      className={`rounded-lg border bg-white p-3.5 transition-all group cursor-grab active:cursor-grabbing ${
+                        isDragging
+                          ? "opacity-40 border-brand-300 shadow-lg scale-[0.97]"
+                          : isUpdating
+                            ? "opacity-60 border-brand-200"
+                            : "border-surface-200 hover:shadow-md hover:border-surface-300"
+                      }`}
+                    >
+                      {/* Drag handle + Title */}
+                      <div className="flex items-start gap-2">
+                        <GripVertical className="h-4 w-4 text-surface-300 mt-0.5 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
+                        <div className="flex-1 min-w-0">
+                          <Link href={`/projects/${project.id}`} className="text-sm font-semibold text-surface-800 hover:text-brand-700 transition-colors leading-snug">
+                            {project.name}
+                          </Link>
+                          <p className="text-2xs text-surface-500 mt-0.5">{project.client?.name || "—"}</p>
+                        </div>
+                      </div>
 
-                  {/* Progress */}
-                  <div className="mt-3">
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-2xs text-surface-400">Progress</span>
-                      <span className="text-2xs font-semibold text-surface-700">{project.progress}%</span>
+                      {/* Priority */}
+                      <div className="mt-2.5 flex items-center gap-1.5 ml-6">
+                        <span className={`h-1.5 w-1.5 rounded-full ${getPriorityDot(project.priority)}`} />
+                        <span className="text-2xs text-surface-500">{project.priority}</span>
+                      </div>
+
+                      {/* Progress */}
+                      <div className="mt-3 ml-6">
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-2xs text-surface-400">Progress</span>
+                          <span className="text-2xs font-semibold text-surface-700">{project.progress}%</span>
+                        </div>
+                        <div className="h-1.5 bg-surface-100 rounded-full overflow-hidden">
+                          <div className={`h-full rounded-full ${getProgressColor(project.progress)} transition-all`} style={{ width: `${project.progress}%` }} />
+                        </div>
+                      </div>
+
+                      {/* Footer */}
+                      <div className="mt-3 pt-2.5 border-t border-surface-100 flex items-center justify-between ml-6">
+                        <span className="text-2xs font-medium text-surface-600">
+                          {formatCurrency(project.budget)}
+                        </span>
+                        <span className="text-[10px] text-surface-400">
+                          {formatDate(project.startDate)} → {formatDate(project.deadline)}
+                        </span>
+                      </div>
+
+                      {/* Updating indicator */}
+                      {isUpdating && (
+                        <div className="mt-2 flex items-center gap-1.5 ml-6">
+                          <div className="h-3 w-3 animate-spin rounded-full border border-brand-600 border-t-transparent" />
+                          <span className="text-[10px] text-brand-600">Updating...</span>
+                        </div>
+                      )}
                     </div>
-                    <div className="h-1.5 bg-surface-100 rounded-full overflow-hidden">
-                      <div className={`h-full rounded-full ${getProgressColor(project.progress)} transition-all`} style={{ width: `${project.progress}%` }} />
-                    </div>
-                  </div>
-
-                  {/* Footer */}
-                  <div className="mt-3 pt-2.5 border-t border-surface-100 flex items-center justify-between">
-                    <span className="text-2xs font-medium text-surface-600">
-                      {formatCurrency(project.budget)}
-                    </span>
-                    <span className="text-[10px] text-surface-400">
-                      {formatDate(project.startDate)} → {formatDate(project.deadline)}
-                    </span>
-                  </div>
-                </Link>
-              ))}
+                  )
+                })}
+              </div>
             </div>
-          </div>
-        ))}
+          )
+        })}
       </div>
     </div>
   );
