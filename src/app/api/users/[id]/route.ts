@@ -1,4 +1,6 @@
-import { prisma } from "@/lib/prisma"
+import { db } from "@/lib/db"
+import { members, organizations } from "@/db/schema"
+import { eq } from "drizzle-orm"
 import { NextRequest, NextResponse } from "next/server"
 
 /**
@@ -9,25 +11,28 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    if (!prisma) {
-      return NextResponse.json({ error: "Database not available" }, { status: 503 })
-    }
+    if (!db) return NextResponse.json({ error: "Database not available" }, { status: 503 })
 
     const { id } = await params
     const body = await req.json()
     const { name, email, role } = body
 
-    const member = await prisma.member.update({
-      where: { id },
-      data: {
+    const [member] = await db
+      .update(members)
+      .set({
         ...(name && { name }),
         ...(email && { email }),
         ...(role && { role }),
-      },
-      include: { organization: true },
-    })
+      })
+      .where(eq(members.id, id))
+      .returning()
 
-    return NextResponse.json(member)
+    const [organization] = await db
+      .select()
+      .from(organizations)
+      .where(eq(organizations.id, member.organizationId))
+
+    return NextResponse.json({ ...member, organization: organization ?? null })
   } catch (error) {
     console.error("Failed to update member:", error)
     return NextResponse.json({ error: "Failed to update member" }, { status: 500 })
@@ -42,12 +47,10 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    if (!prisma) {
-      return NextResponse.json({ error: "Database not available" }, { status: 503 })
-    }
+    if (!db) return NextResponse.json({ error: "Database not available" }, { status: 503 })
 
     const { id } = await params
-    await prisma.member.delete({ where: { id } })
+    await db.delete(members).where(eq(members.id, id))
 
     return NextResponse.json({ success: true })
   } catch (error) {

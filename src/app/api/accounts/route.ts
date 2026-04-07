@@ -1,14 +1,18 @@
-import { prisma } from "@/lib/prisma"
+import { db } from "@/lib/db"
+import { chartOfAccounts, ledgerEntries } from "@/db/schema"
+import { eq, asc } from "drizzle-orm"
 import { NextResponse } from "next/server"
 
 export async function GET() {
   try {
-    if (!prisma) return NextResponse.json([])
-    const accounts = await prisma.chartOfAccount.findMany({
-      orderBy: { code: "asc" },
-      include: { entries: true },
-    })
-    return NextResponse.json(accounts)
+    if (!db) return NextResponse.json([])
+    const accounts = await db.select().from(chartOfAccounts).orderBy(asc(chartOfAccounts.code))
+    const entries = await db.select().from(ledgerEntries)
+    const accountsWithEntries = accounts.map((account) => ({
+      ...account,
+      entries: entries.filter((e) => e.accountId === account.id),
+    }))
+    return NextResponse.json(accountsWithEntries)
   } catch {
     return NextResponse.json([])
   }
@@ -16,9 +20,12 @@ export async function GET() {
 
 export async function POST(req: Request) {
   try {
-    if (!prisma) return NextResponse.json({ error: "Database not configured" }, { status: 503 })
+    if (!db) return NextResponse.json({ error: "Database not configured" }, { status: 503 })
     const body = await req.json()
-    const account = await prisma.chartOfAccount.create({ data: body })
+    const [account] = await db
+      .insert(chartOfAccounts)
+      .values({ id: crypto.randomUUID(), ...body })
+      .returning()
     return NextResponse.json(account, { status: 201 })
   } catch {
     return NextResponse.json({ error: "Failed to create account" }, { status: 500 })

@@ -1,14 +1,22 @@
-import { prisma } from "@/lib/prisma"
+import { db } from "@/lib/db"
+import { payments, clients, invoices, bankAccounts } from "@/db/schema"
+import { eq, desc } from "drizzle-orm"
 import { NextResponse } from "next/server"
 
 export async function GET() {
   try {
-    if (!prisma) return NextResponse.json([])
-    const payments = await prisma.payment.findMany({
-      include: { client: true, invoice: true, bankAccount: true },
-      orderBy: { createdAt: "desc" },
-    })
-    return NextResponse.json(payments)
+    if (!db) return NextResponse.json([])
+    const allPayments = await db.select().from(payments).orderBy(desc(payments.createdAt))
+    const allClients = await db.select().from(clients)
+    const allInvoices = await db.select().from(invoices)
+    const allBankAccounts = await db.select().from(bankAccounts)
+    const result = allPayments.map((payment) => ({
+      ...payment,
+      client: allClients.find((c) => c.id === payment.clientId) ?? null,
+      invoice: allInvoices.find((i) => i.id === payment.invoiceId) ?? null,
+      bankAccount: allBankAccounts.find((b) => b.id === payment.bankAccountId) ?? null,
+    }))
+    return NextResponse.json(result)
   } catch {
     return NextResponse.json([])
   }
@@ -16,13 +24,23 @@ export async function GET() {
 
 export async function POST(req: Request) {
   try {
-    if (!prisma) return NextResponse.json({ error: "Database not configured" }, { status: 503 })
+    if (!db) return NextResponse.json({ error: "Database not configured" }, { status: 503 })
     const body = await req.json()
-    const payment = await prisma.payment.create({
-      data: body,
-      include: { client: true, invoice: true, bankAccount: true },
-    })
-    return NextResponse.json(payment, { status: 201 })
+    const [payment] = await db
+      .insert(payments)
+      .values({ id: crypto.randomUUID(), ...body })
+      .returning()
+    const [client] = await db.select().from(clients).where(eq(clients.id, payment.clientId))
+    const invoice = payment.invoiceId
+      ? (await db.select().from(invoices).where(eq(invoices.id, payment.invoiceId)))[0] ?? null
+      : null
+    const bankAccount = payment.bankAccountId
+      ? (await db.select().from(bankAccounts).where(eq(bankAccounts.id, payment.bankAccountId)))[0] ?? null
+      : null
+    return NextResponse.json(
+      { ...payment, client: client ?? null, invoice, bankAccount },
+      { status: 201 }
+    )
   } catch {
     return NextResponse.json({ error: "Failed to create payment" }, { status: 500 })
   }

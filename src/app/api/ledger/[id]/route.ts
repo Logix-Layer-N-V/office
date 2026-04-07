@@ -1,16 +1,16 @@
-import { prisma } from "@/lib/prisma"
+import { db } from "@/lib/db"
+import { ledgerEntries, chartOfAccounts } from "@/db/schema"
+import { eq } from "drizzle-orm"
 import { NextResponse } from "next/server"
 
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   try {
-    if (!prisma) return NextResponse.json(null)
-    const entry = await prisma.ledgerEntry.findUnique({
-      where: { id },
-      include: { account: true },
-    })
+    if (!db) return NextResponse.json(null)
+    const [entry] = await db.select().from(ledgerEntries).where(eq(ledgerEntries.id, id))
     if (!entry) return NextResponse.json({ error: "Not found" }, { status: 404 })
-    return NextResponse.json(entry)
+    const [account] = await db.select().from(chartOfAccounts).where(eq(chartOfAccounts.id, entry.accountId))
+    return NextResponse.json({ ...entry, account: account ?? null })
   } catch {
     return NextResponse.json({ error: "Failed to fetch" }, { status: 500 })
   }
@@ -19,14 +19,15 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
 export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   try {
-    if (!prisma) return NextResponse.json({ error: "Database not configured" }, { status: 503 })
+    if (!db) return NextResponse.json({ error: "Database not configured" }, { status: 503 })
     const body = await req.json()
-    const updated = await prisma.ledgerEntry.update({
-      where: { id },
-      data: body,
-      include: { account: true },
-    })
-    return NextResponse.json(updated)
+    const [updated] = await db
+      .update(ledgerEntries)
+      .set({ ...body })
+      .where(eq(ledgerEntries.id, id))
+      .returning()
+    const [account] = await db.select().from(chartOfAccounts).where(eq(chartOfAccounts.id, updated.accountId))
+    return NextResponse.json({ ...updated, account: account ?? null })
   } catch {
     return NextResponse.json({ error: "Failed to update" }, { status: 500 })
   }
@@ -35,8 +36,8 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
 export async function DELETE(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   try {
-    if (!prisma) return NextResponse.json({ error: "Database not configured" }, { status: 503 })
-    await prisma.ledgerEntry.delete({ where: { id } })
+    if (!db) return NextResponse.json({ error: "Database not configured" }, { status: 503 })
+    await db.delete(ledgerEntries).where(eq(ledgerEntries.id, id))
     return NextResponse.json({ success: true })
   } catch {
     return NextResponse.json({ error: "Failed to delete" }, { status: 500 })
