@@ -18,6 +18,7 @@ function createPrismaClient(): PrismaClientType | null {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { PrismaClient } = require("@prisma/client")
     return new PrismaClient({
+      datasourceUrl: process.env.DATABASE_URL,
       log: process.env.NODE_ENV === "development" ? ["error", "warn"] : ["error"],
     })
   } catch {
