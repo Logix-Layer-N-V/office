@@ -8,10 +8,14 @@ import { Modal } from "@/components/ui/modal"
 import { useApi } from "@/hooks/use-api"
 import type { Credit } from "@/types"
 import { formatCurrency, formatDate, getStatusColor } from "@/lib/utils"
+import { ListToolbar, applyFilters, type ActiveFilter } from "@/components/ui/list-toolbar"
 
 export default function CreditsPage() {
   const [showCreate, setShowCreate] = useState(false)
   const { data: credits, loading } = useApi<Credit[]>("/api/credits", [])
+  const [search, setSearch] = useState("")
+  const [filters, setFilters] = useState<ActiveFilter[]>([])
+  const [activeTab, setActiveTab] = useState("all")
 
   if (loading) {
     return (
@@ -24,7 +28,23 @@ export default function CreditsPage() {
     )
   }
 
-  const mockCredits = credits
+  let filtered = applyFilters(
+    credits as unknown as Record<string, unknown>[],
+    search,
+    filters,
+    ["number", "description", "reason"]
+  ) as unknown as Credit[]
+
+  if (activeTab !== "all") {
+    filtered = filtered.filter(c => c.status === activeTab.toUpperCase())
+  }
+
+  const quickFilters = [
+    { value: "all", label: "All", count: credits.length },
+    { value: "active", label: "Active", count: credits.filter(c => c.status === "ACTIVE").length },
+    { value: "used", label: "Used", count: credits.filter(c => c.status === "USED").length },
+    { value: "expired", label: "Expired", count: credits.filter(c => c.status === "EXPIRED").length },
+  ]
 
   const columns: Column<Credit>[] = [
     { key: "number", label: "Number", render: (r: Credit) => <span className="font-medium text-surface-800">{r.number}</span> },
@@ -38,8 +58,24 @@ export default function CreditsPage() {
   return (
     <div>
       <Header title="Credits" subtitle="Manage credit notes and refunds" action={{ label: "New Credit", onClick: () => setShowCreate(true) }} />
-      <div className="p-6">
-        <div className="card"><DataTable<Credit> columns={columns} data={mockCredits} /></div>
+      <div className="p-4 md:p-6 space-y-4">
+        <div className="card p-4">
+          <ListToolbar
+            storageKey="credits"
+            searchPlaceholder="Search credits..."
+            filterOptions={[
+              { key: "status", label: "Status", type: "select", options: [
+                { value: "ACTIVE", label: "Active" }, { value: "USED", label: "Used" },
+                { value: "EXPIRED", label: "Expired" }, { value: "CANCELLED", label: "Cancelled" },
+              ]},
+            ]}
+            quickFilters={quickFilters}
+            activeQuickFilter={activeTab}
+            onQuickFilterChange={setActiveTab}
+            onChange={(s, f) => { setSearch(s); setFilters(f) }}
+          />
+        </div>
+        <div className="card"><DataTable<Credit> columns={columns} data={filtered} /></div>
       </div>
       <Modal open={showCreate} onClose={() => setShowCreate(false)} title="Create Credit Note">
         <form className="space-y-4">

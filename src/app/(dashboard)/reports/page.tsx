@@ -1,10 +1,59 @@
 "use client"
 
+import { useState } from "react"
 import { Header } from "@/components/dashboard/header"
 import { useApi } from "@/hooks/use-api"
 import type { Invoice, Payment, Proposal, Client, Expense } from "@/types"
 import { formatCurrency } from "@/lib/utils"
-import { ArrowRight } from "lucide-react"
+import { ArrowRight, ChevronDown, ChevronRight } from "lucide-react"
+
+// ─── Collapsible Section ─────────────────────
+function CollapsibleCard({ title, subtitle, children, defaultOpen = true }: {
+  title: string
+  subtitle?: string
+  children: React.ReactNode
+  defaultOpen?: boolean
+}) {
+  const [open, setOpen] = useState(defaultOpen)
+
+  return (
+    <div className="card">
+      <button
+        onClick={() => setOpen(!open)}
+        className="flex items-center justify-between w-full px-5 py-3 hover:bg-surface-50 transition-colors"
+      >
+        <div className="text-left">
+          <h3 className="text-xs font-semibold text-surface-700">{title}</h3>
+          {subtitle && <p className="text-2xs text-surface-400">{subtitle}</p>}
+        </div>
+        {open ? <ChevronDown className="h-4 w-4 text-surface-400" /> : <ChevronRight className="h-4 w-4 text-surface-400" />}
+      </button>
+      {open && <div className="px-5 pb-5 pt-1">{children}</div>}
+    </div>
+  )
+}
+
+// ─── Collapsible Section Group ───────────────
+function SectionGroup({ title, children, defaultOpen = true }: {
+  title: string
+  children: React.ReactNode
+  defaultOpen?: boolean
+}) {
+  const [open, setOpen] = useState(defaultOpen)
+
+  return (
+    <div>
+      <button
+        onClick={() => setOpen(!open)}
+        className="flex items-center gap-2 mb-3 group"
+      >
+        {open ? <ChevronDown className="h-4 w-4 text-surface-400" /> : <ChevronRight className="h-4 w-4 text-surface-400" />}
+        <h2 className="text-sm font-semibold text-surface-800 group-hover:text-brand-600 transition-colors">{title}</h2>
+      </button>
+      {open && children}
+    </div>
+  )
+}
 
 export default function ReportsPage() {
   const { data: invoices, loading: loadingInv } = useApi<Invoice[]>("/api/invoices", [])
@@ -26,35 +75,29 @@ export default function ReportsPage() {
     )
   }
 
-  const mockInvoices = invoices
-  const mockPayments = payments
-  const mockProposals = proposals
-  const mockClients = clients
-  const mockExpenses = expenses
-
   // Financial metrics
-  const totalRevenue = mockInvoices.reduce((sum, inv) => sum + inv.total, 0)
-  const totalExpenses = mockExpenses.reduce((sum, exp) => sum + exp.amount, 0)
+  const totalRevenue = invoices.reduce((sum, inv) => sum + (parseFloat(String(inv.total)) || 0), 0)
+  const totalExpenses = expenses.reduce((sum, exp) => sum + (parseFloat(String(exp.amount)) || 0), 0)
   const netIncome = totalRevenue - totalExpenses
   const marginPercentage = totalRevenue > 0 ? ((netIncome / totalRevenue) * 100).toFixed(1) : "0"
 
-  const paidInvoices = mockInvoices.filter((inv) => inv.status === "PAID").length
-  const unpaidInvoices = mockInvoices.filter((inv) => inv.status === "SENT" || inv.status === "PARTIAL").length
-  const overdueInvoices = mockInvoices.filter((inv) => inv.status === "OVERDUE").length
+  const paidInvoices = invoices.filter((inv) => inv.status === "PAID").length
+  const unpaidInvoices = invoices.filter((inv) => inv.status === "SENT" || inv.status === "PARTIAL").length
+  const overdueInvoices = invoices.filter((inv) => inv.status === "OVERDUE").length
 
-  const totalPayments = mockPayments.reduce((sum, pay) => sum + pay.amount, 0)
+  const totalPayments = payments.reduce((sum, pay) => sum + (parseFloat(String(pay.amount)) || 0), 0)
 
-  const totalProposals = mockProposals.length
-  const wonProposals = mockProposals.filter((p) => p.status === "APPROVED").length
+  const totalProposals = proposals.length
+  const wonProposals = proposals.filter((p) => p.status === "APPROVED").length
   const winRate = totalProposals > 0 ? ((wonProposals / totalProposals) * 100).toFixed(0) : "0"
-  const pipelineValue = mockProposals.reduce((sum, p) => sum + p.total, 0)
+  const pipelineValue = proposals.reduce((sum, p) => sum + (parseFloat(String(p.total)) || 0), 0)
   const avgProposalValue = totalProposals > 0 ? Math.round(pipelineValue / totalProposals) : 0
 
   // Revenue by client
-  const revenueByClient = mockClients
+  const revenueByClient = clients
     .map((c) => ({
       name: c.name,
-      revenue: mockInvoices.filter((i) => i.client?.id === c.id).reduce((s, i) => s + (parseFloat(String(i.total)) || 0), 0),
+      revenue: invoices.filter((i) => i.client?.id === c.id).reduce((s, i) => s + (parseFloat(String(i.total)) || 0), 0),
     }))
     .filter((c) => c.revenue > 0)
     .sort((a, b) => b.revenue - a.revenue)
@@ -63,31 +106,27 @@ export default function ReportsPage() {
 
   // Expenses by category
   const expenseMap: Record<string, number> = {}
-  mockExpenses.forEach((exp) => { expenseMap[exp.category] = (expenseMap[exp.category] || 0) + exp.amount })
+  expenses.forEach((exp) => { expenseMap[exp.category] = (expenseMap[exp.category] || 0) + (parseFloat(String(exp.amount)) || 0) })
   const expensesByCategory = Object.entries(expenseMap).map(([category, amount]) => ({ category, amount })).sort((a, b) => b.amount - a.amount)
   const maxExpense = Math.max(...expensesByCategory.map((e) => e.amount), 1)
 
   // Payment methods
   const methodMap: Record<string, number> = {}
-  mockPayments.forEach((pay) => { methodMap[pay.method] = (methodMap[pay.method] || 0) + pay.amount })
+  payments.forEach((pay) => { methodMap[pay.method] = (methodMap[pay.method] || 0) + (parseFloat(String(pay.amount)) || 0) })
 
   // Client activity
-  const clientActivity = mockClients.map((c) => ({
+  const clientActivity = clients.map((c) => ({
     name: c.name,
-    proposals: mockProposals.filter((p) => p.client?.id === c.id).length,
-    invoices: mockInvoices.filter((i) => i.client?.id === c.id).length,
-    payments: mockPayments.filter((p) => p.client?.id === c.id).length,
-    revenue: mockInvoices.filter((i) => i.client?.id === c.id).reduce((s, i) => s + (parseFloat(String(i.total)) || 0), 0),
+    proposals: proposals.filter((p) => p.client?.id === c.id).length,
+    invoices: invoices.filter((i) => i.client?.id === c.id).length,
+    payments: payments.filter((p) => p.client?.id === c.id).length,
+    revenue: invoices.filter((i) => i.client?.id === c.id).reduce((s, i) => s + (parseFloat(String(i.total)) || 0), 0),
   }))
 
-  // Token usage (placeholder if no dedicated endpoint)
-  const totalTokenCost = 0
-  const totalInputTokens = 0
-  const totalOutputTokens = 0
-  const totalApiRequests = 0
-
-  // Token usage per client (placeholder)
-  const tokenByClient: { name: string; inputTokens: number; outputTokens: number; cost: number }[] = []
+  // Cash flow safe division
+  const cashTotal = totalPayments + totalExpenses
+  const inflowPct = cashTotal > 0 ? (totalPayments / cashTotal) * 100 : 50
+  const outflowPct = cashTotal > 0 ? (totalExpenses / cashTotal) * 100 : 50
 
   return (
     <div>
@@ -95,13 +134,9 @@ export default function ReportsPage() {
 
       <div className="p-4 md:p-6 space-y-6">
         {/* Financial Reports */}
-        <div>
-          <h2 className="text-sm font-semibold text-surface-800 mb-3">Financial Reports</h2>
+        <SectionGroup title="Financial Reports">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Revenue */}
-            <div className="card p-5">
-              <h3 className="text-xs font-semibold text-surface-700 mb-1">Revenue Report</h3>
-              <p className="text-2xs text-surface-400 mb-4">Total and by client</p>
+            <CollapsibleCard title="Revenue Report" subtitle="Total and by client">
               <div className="flex justify-between items-center mb-4">
                 <span className="text-2xs text-surface-500">Total Revenue</span>
                 <span className="text-lg font-bold text-brand-600">{formatCurrency(totalRevenue)}</span>
@@ -121,12 +156,9 @@ export default function ReportsPage() {
                 ))}
               </div>
               <button className="btn-secondary w-full text-2xs">View Full Report <ArrowRight className="h-3 w-3" /></button>
-            </div>
+            </CollapsibleCard>
 
-            {/* Expenses */}
-            <div className="card p-5">
-              <h3 className="text-xs font-semibold text-surface-700 mb-1">Expense Report</h3>
-              <p className="text-2xs text-surface-400 mb-4">By category</p>
+            <CollapsibleCard title="Expense Report" subtitle="By category">
               <div className="flex justify-between items-center mb-4">
                 <span className="text-2xs text-surface-500">Total Expenses</span>
                 <span className="text-lg font-bold text-red-600">{formatCurrency(totalExpenses)}</span>
@@ -146,12 +178,9 @@ export default function ReportsPage() {
                 ))}
               </div>
               <button className="btn-secondary w-full text-2xs">View Full Report <ArrowRight className="h-3 w-3" /></button>
-            </div>
+            </CollapsibleCard>
 
-            {/* P&L */}
-            <div className="card p-5">
-              <h3 className="text-xs font-semibold text-surface-700 mb-1">Profit & Loss</h3>
-              <p className="text-2xs text-surface-400 mb-4">Net income analysis</p>
+            <CollapsibleCard title="Profit & Loss" subtitle="Net income analysis">
               <div className="space-y-3 mb-4">
                 <div className="flex justify-between items-center py-2 border-b border-surface-100">
                   <span className="text-2xs text-surface-500">Revenue</span>
@@ -164,18 +193,15 @@ export default function ReportsPage() {
                 <div className="flex justify-between items-center bg-brand-50 rounded-md px-3 py-2">
                   <span className="text-2xs font-semibold text-surface-700">Net Income</span>
                   <div className="text-right">
-                    <p className="text-lg font-bold text-brand-600">{formatCurrency(netIncome)}</p>
+                    <p className={`text-lg font-bold ${netIncome >= 0 ? "text-emerald-600" : "text-red-600"}`}>{formatCurrency(netIncome)}</p>
                     <p className="text-2xs text-brand-500">{marginPercentage}% margin</p>
                   </div>
                 </div>
               </div>
               <button className="btn-secondary w-full text-2xs">View Full Report <ArrowRight className="h-3 w-3" /></button>
-            </div>
+            </CollapsibleCard>
 
-            {/* Cash Flow */}
-            <div className="card p-5">
-              <h3 className="text-xs font-semibold text-surface-700 mb-1">Cash Flow</h3>
-              <p className="text-2xs text-surface-400 mb-4">Inflows vs outflows</p>
+            <CollapsibleCard title="Cash Flow" subtitle="Inflows vs outflows">
               <div className="space-y-3 mb-4">
                 <div>
                   <div className="flex justify-between text-2xs mb-1">
@@ -183,7 +209,7 @@ export default function ReportsPage() {
                     <span className="font-bold text-emerald-600">{formatCurrency(totalPayments)}</span>
                   </div>
                   <div className="w-full bg-surface-100 rounded-full h-2">
-                    <div className="bg-emerald-500 h-2 rounded-full" style={{ width: `${(totalPayments / (totalPayments + totalExpenses)) * 100}%` }} />
+                    <div className="bg-emerald-500 h-2 rounded-full" style={{ width: `${inflowPct}%` }} />
                   </div>
                 </div>
                 <div>
@@ -192,27 +218,25 @@ export default function ReportsPage() {
                     <span className="font-bold text-red-600">{formatCurrency(totalExpenses)}</span>
                   </div>
                   <div className="w-full bg-surface-100 rounded-full h-2">
-                    <div className="bg-red-400 h-2 rounded-full" style={{ width: `${(totalExpenses / (totalPayments + totalExpenses)) * 100}%` }} />
+                    <div className="bg-red-400 h-2 rounded-full" style={{ width: `${outflowPct}%` }} />
                   </div>
                 </div>
                 <div className="bg-surface-50 rounded-md p-3">
                   <p className="text-2xs text-surface-500">Net Cash Position</p>
-                  <p className="text-lg font-bold text-surface-800">{formatCurrency(totalPayments - totalExpenses)}</p>
+                  <p className={`text-lg font-bold ${totalPayments - totalExpenses >= 0 ? "text-emerald-600" : "text-red-600"}`}>
+                    {formatCurrency(totalPayments - totalExpenses)}
+                  </p>
                 </div>
               </div>
               <button className="btn-secondary w-full text-2xs">View Full Report <ArrowRight className="h-3 w-3" /></button>
-            </div>
+            </CollapsibleCard>
           </div>
-        </div>
+        </SectionGroup>
 
         {/* Sales Reports */}
-        <div>
-          <h2 className="text-sm font-semibold text-surface-800 mb-3">Sales Reports</h2>
+        <SectionGroup title="Sales Reports">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {/* Proposals */}
-            <div className="card p-5">
-              <h3 className="text-xs font-semibold text-surface-700 mb-1">Proposals</h3>
-              <p className="text-2xs text-surface-400 mb-4">Win rate and value</p>
+            <CollapsibleCard title="Proposals" subtitle="Win rate and value">
               <div className="grid grid-cols-2 gap-2 mb-4">
                 <div className="bg-brand-50 rounded-md p-2"><p className="text-2xs text-surface-500">Total</p><p className="text-lg font-bold text-brand-600">{totalProposals}</p></div>
                 <div className="bg-emerald-50 rounded-md p-2"><p className="text-2xs text-surface-500">Win Rate</p><p className="text-lg font-bold text-emerald-600">{winRate}%</p></div>
@@ -220,15 +244,12 @@ export default function ReportsPage() {
                 <div className="bg-purple-50 rounded-md p-2"><p className="text-2xs text-surface-500">Pipeline</p><p className="text-sm font-bold text-purple-600">{formatCurrency(pipelineValue)}</p></div>
               </div>
               <button className="btn-secondary w-full text-2xs">View Full Report <ArrowRight className="h-3 w-3" /></button>
-            </div>
+            </CollapsibleCard>
 
-            {/* Invoices */}
-            <div className="card p-5">
-              <h3 className="text-xs font-semibold text-surface-700 mb-1">Invoices</h3>
-              <p className="text-2xs text-surface-400 mb-4">Status breakdown</p>
+            <CollapsibleCard title="Invoices" subtitle="Status breakdown">
               <div className="flex justify-between items-center mb-3">
                 <span className="text-2xs text-surface-500">Total Invoices</span>
-                <span className="text-lg font-bold text-surface-800">{mockInvoices.length}</span>
+                <span className="text-lg font-bold text-surface-800">{invoices.length}</span>
               </div>
               <div className="grid grid-cols-3 gap-2 mb-4">
                 <div className="bg-emerald-50 rounded-md p-2 text-center"><p className="text-2xs text-surface-500">Paid</p><p className="text-lg font-bold text-emerald-600">{paidInvoices}</p></div>
@@ -236,12 +257,9 @@ export default function ReportsPage() {
                 <div className="bg-red-50 rounded-md p-2 text-center"><p className="text-2xs text-surface-500">Overdue</p><p className="text-lg font-bold text-red-600">{overdueInvoices}</p></div>
               </div>
               <button className="btn-secondary w-full text-2xs">View Full Report <ArrowRight className="h-3 w-3" /></button>
-            </div>
+            </CollapsibleCard>
 
-            {/* Payments */}
-            <div className="card p-5">
-              <h3 className="text-xs font-semibold text-surface-700 mb-1">Payments</h3>
-              <p className="text-2xs text-surface-400 mb-4">By method</p>
+            <CollapsibleCard title="Payments" subtitle="By method">
               <div className="flex justify-between items-center mb-3">
                 <span className="text-2xs text-surface-500">Total Collected</span>
                 <span className="text-lg font-bold text-emerald-600">{formatCurrency(totalPayments)}</span>
@@ -254,77 +272,39 @@ export default function ReportsPage() {
                       <span className="font-semibold text-surface-800">{formatCurrency(amount)}</span>
                     </div>
                     <div className="w-full bg-surface-100 rounded-full h-1.5">
-                      <div className="bg-emerald-500 h-1.5 rounded-full" style={{ width: `${(amount / totalPayments) * 100}%` }} />
+                      <div className="bg-emerald-500 h-1.5 rounded-full" style={{ width: `${totalPayments > 0 ? (amount / totalPayments) * 100 : 0}%` }} />
                     </div>
                   </div>
                 ))}
               </div>
               <button className="btn-secondary w-full text-2xs">View Full Report <ArrowRight className="h-3 w-3" /></button>
-            </div>
+            </CollapsibleCard>
           </div>
-        </div>
+        </SectionGroup>
 
         {/* Client Reports */}
-        <div>
-          <h2 className="text-sm font-semibold text-surface-800 mb-3">Client Reports</h2>
-
-          {/* Client Activity Table */}
-          <div className="card mb-4">
-            <div className="px-4 py-3 border-b border-surface-100">
-              <h3 className="text-xs font-semibold text-surface-700">Client Activity</h3>
-              <p className="text-2xs text-surface-400">Proposals, invoices, and payments per client</p>
-            </div>
+        <SectionGroup title="Client Reports">
+          <CollapsibleCard title="Client Activity" subtitle="Proposals, invoices, and payments per client">
             <div className="overflow-x-auto">
-            <table className="table-compact">
-              <thead>
-                <tr><th>Client</th><th className="text-center">Proposals</th><th className="text-center">Invoices</th><th className="text-center">Payments</th><th className="text-right">Revenue</th></tr>
-              </thead>
-              <tbody>
-                {clientActivity.map((c) => (
-                  <tr key={c.name}>
-                    <td className="font-medium text-surface-800">{c.name}</td>
-                    <td className="text-center">{c.proposals}</td>
-                    <td className="text-center">{c.invoices}</td>
-                    <td className="text-center">{c.payments}</td>
-                    <td className="text-right font-semibold">{formatCurrency(c.revenue)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+              <table className="table-compact">
+                <thead>
+                  <tr><th>Client</th><th className="text-center">Proposals</th><th className="text-center">Invoices</th><th className="text-center">Payments</th><th className="text-right">Revenue</th></tr>
+                </thead>
+                <tbody>
+                  {clientActivity.map((c) => (
+                    <tr key={c.name}>
+                      <td className="font-medium text-surface-800">{c.name}</td>
+                      <td className="text-center">{c.proposals}</td>
+                      <td className="text-center">{c.invoices}</td>
+                      <td className="text-center">{c.payments}</td>
+                      <td className="text-right font-semibold">{formatCurrency(c.revenue)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
-          </div>
-
-          {/* AI/API Usage */}
-          <div className="card">
-            <div className="px-4 py-3 border-b border-surface-100">
-              <h3 className="text-xs font-semibold text-surface-700">AI & API Usage</h3>
-              <p className="text-2xs text-surface-400">Per-client consumption metrics</p>
-            </div>
-            <div className="grid grid-cols-4 gap-3 p-4">
-              <div className="bg-brand-50 rounded-md p-3"><p className="text-2xs text-surface-500">Total Token Cost</p><p className="text-lg font-bold text-brand-600">{formatCurrency(totalTokenCost)}</p></div>
-              <div className="bg-blue-50 rounded-md p-3"><p className="text-2xs text-surface-500">Input Tokens</p><p className="text-lg font-bold text-blue-600">{(totalInputTokens / 1_000_000).toFixed(1)}M</p></div>
-              <div className="bg-purple-50 rounded-md p-3"><p className="text-2xs text-surface-500">Output Tokens</p><p className="text-lg font-bold text-purple-600">{(totalOutputTokens / 1_000_000).toFixed(1)}M</p></div>
-              <div className="bg-amber-50 rounded-md p-3"><p className="text-2xs text-surface-500">API Requests</p><p className="text-lg font-bold text-amber-600">{(totalApiRequests / 1000).toFixed(0)}K</p></div>
-            </div>
-            <div className="overflow-x-auto">
-            <table className="table-compact">
-              <thead>
-                <tr><th>Client</th><th className="text-right">Input Tokens</th><th className="text-right">Output Tokens</th><th className="text-right">Cost</th></tr>
-              </thead>
-              <tbody>
-                {tokenByClient.map((c) => (
-                  <tr key={c.name}>
-                    <td className="font-medium text-surface-800">{c.name}</td>
-                    <td className="text-right">{(c.inputTokens / 1_000_000).toFixed(1)}M</td>
-                    <td className="text-right">{(c.outputTokens / 1_000_000).toFixed(1)}M</td>
-                    <td className="text-right font-semibold">{formatCurrency(c.cost)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            </div>
-          </div>
-        </div>
+          </CollapsibleCard>
+        </SectionGroup>
       </div>
     </div>
   )
