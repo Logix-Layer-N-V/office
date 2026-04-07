@@ -8,7 +8,7 @@
  */
 
 import { useState } from "react"
-import { useParams } from "next/navigation"
+import { useParams, useRouter } from "next/navigation"
 import Link from "next/link"
 import { useApi } from "@/hooks/use-api"
 import { formatCurrency, formatDate, getStatusColor } from "@/lib/utils"
@@ -141,6 +141,7 @@ function EmailModal({ client, onClose }: { client: Client; onClose: () => void }
 
 export default function ClientDetailPage() {
   const params = useParams()
+  const router = useRouter()
   const clientId = params.id as string
   const [activeTab, setActiveTab] = useState<TabKey>("profile")
   const [showEmailModal, setShowEmailModal] = useState(false)
@@ -188,6 +189,19 @@ export default function ClientDetailPage() {
   const totalPaid = clientInvoices.reduce((sum, i) => sum + (parseFloat(String(i.amountPaid)) || 0), 0)
   const totalDue = clientInvoices.reduce((sum, i) => sum + (parseFloat(String(i.amountDue)) || 0), 0)
 
+  // Counts per tab for badge display
+  const tabCounts: Partial<Record<TabKey, number>> = {
+    proposals: clientProposals.length,
+    estimates: clientEstimates.length,
+    invoices: clientInvoices.length,
+    payments: clientPayments.length,
+    projects: clientProjects.length,
+    workorders: clientWorkOrders.length,
+    tasks: clientTasks.length,
+    apikeys: clientApiKeys.length,
+    aitokens: clientTokenUsage.length,
+  }
+
   const initials = (client?.name || "")
     .split(" ")
     .map((w) => w[0])
@@ -231,7 +245,16 @@ export default function ClientDetailPage() {
             >
               {item.icon}
               <span className="flex-1">{item.label}</span>
-              {activeTab === item.key && <ChevronRight className="h-4 w-4 ml-auto" />}
+              {(tabCounts[item.key] ?? 0) > 0 && (
+                <span className={`ml-auto inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-2xs font-semibold ${
+                  activeTab === item.key
+                    ? "bg-brand-600 text-white"
+                    : "bg-surface-100 text-surface-600"
+                }`}>
+                  {tabCounts[item.key]}
+                </span>
+              )}
+              {activeTab === item.key && (tabCounts[item.key] ?? 0) === 0 && <ChevronRight className="h-4 w-4 ml-auto" />}
             </button>
           ))}
         </nav>
@@ -256,6 +279,11 @@ export default function ClientDetailPage() {
                 <span className="text-sm font-medium text-surface-800">
                   {sidebarItems.find(i => i.key === activeTab)?.label}
                 </span>
+                {(tabCounts[activeTab] ?? 0) > 0 && (
+                  <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-brand-600 text-white px-1.5 text-2xs font-semibold">
+                    {tabCounts[activeTab]}
+                  </span>
+                )}
               </div>
               <ChevronDown className="h-4 w-4 text-surface-400" />
             </div>
@@ -265,7 +293,9 @@ export default function ClientDetailPage() {
               className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
             >
               {sidebarItems.map((item) => (
-                <option key={item.key} value={item.key}>{item.label}</option>
+                <option key={item.key} value={item.key}>
+                  {item.label}{(tabCounts[item.key] ?? 0) > 0 ? ` (${tabCounts[item.key]})` : ""}
+                </option>
               ))}
             </select>
           </div>
@@ -391,8 +421,8 @@ export default function ClientDetailPage() {
                     </thead>
                     <tbody>
                       {clientProposals.map((p) => (
-                        <tr key={p.id}>
-                          <td className="font-mono text-xs text-surface-600">{p.number}</td>
+                        <tr key={p.id} className="cursor-pointer hover:bg-surface-50" onClick={() => router.push(`/proposals/${p.id}`)}>
+                          <td className="font-mono text-xs text-brand-600 hover:underline">{p.number}</td>
                           <td className="font-medium text-surface-800">{p.title}</td>
                           <td>
                             <span className={getStatusColor(p.status)}>{p.status}</span>
@@ -433,8 +463,8 @@ export default function ClientDetailPage() {
                     </thead>
                     <tbody>
                       {clientEstimates.map((e) => (
-                        <tr key={e.id}>
-                          <td className="font-mono text-xs text-surface-600">{e.number}</td>
+                        <tr key={e.id} className="cursor-pointer hover:bg-surface-50" onClick={() => router.push(`/estimates/${e.id}`)}>
+                          <td className="font-mono text-xs text-brand-600 hover:underline">{e.number}</td>
                           <td className="font-medium text-surface-800">{e.title}</td>
                           <td>
                             <span className={getStatusColor(e.status)}>{e.status}</span>
@@ -477,8 +507,8 @@ export default function ClientDetailPage() {
                     </thead>
                     <tbody>
                       {clientInvoices.map((i) => (
-                        <tr key={i.id}>
-                          <td className="font-mono text-xs text-surface-600">{i.number}</td>
+                        <tr key={i.id} className="cursor-pointer hover:bg-surface-50" onClick={() => router.push(`/invoices/${i.id}`)}>
+                          <td className="font-mono text-xs text-brand-600 hover:underline">{i.number}</td>
                           <td className="font-medium text-surface-800">{i.title}</td>
                           <td>
                             <span className={getStatusColor(i.status)}>{i.status}</span>
@@ -551,7 +581,7 @@ export default function ClientDetailPage() {
               ) : (
                 <div className="space-y-3">
                   {clientProjects.map((proj) => (
-                    <div key={proj.id} className="card p-4">
+                    <div key={proj.id} className="card p-4 cursor-pointer hover:shadow-md transition-shadow" onClick={() => router.push(`/projects/${proj.id}`)}>
                       <div className="flex items-start justify-between mb-3">
                         <div>
                           <h3 className="font-semibold text-surface-900">{proj.name}</h3>

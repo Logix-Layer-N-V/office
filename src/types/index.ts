@@ -280,6 +280,42 @@ export interface Credit {
   createdAt: string
 }
 
+// ─── Vendors ──────────────────────────────────
+
+export interface Vendor {
+  id: string
+  name: string
+  email?: string
+  phone?: string
+  company?: string
+  address?: string
+  taxId?: string
+  website?: string
+  notes?: string
+  isActive: boolean
+  organizationId: string
+  createdAt: string
+  updatedAt: string
+  expenseCount?: number
+  totalSpent?: number
+}
+
+// ─── Expense Categories ───────────────────────
+
+export interface ExpenseCategoryRecord {
+  id: string
+  name: string
+  description?: string
+  color: string
+  budget?: number
+  isActive: boolean
+  organizationId: string
+  createdAt: string
+  updatedAt: string
+  expenseCount?: number
+  totalSpent?: number
+}
+
 // ─── Expenses ──────────────────────────────────
 
 export interface Expense {

@@ -54,9 +54,9 @@ export function DocumentPreview(props: DocumentPreviewProps) {
   const isOverdue = props.status === "OVERDUE"
 
   return (
-    <div className="mx-auto max-w-[760px] bg-white shadow-lg print:shadow-none print:max-w-none">
+    <div className="mx-auto w-[210mm] min-h-[297mm] bg-white shadow-lg flex flex-col print:shadow-none print:w-[210mm] print:min-h-[297mm] print:max-h-[297mm] print:m-0 print:overflow-hidden">
       {/* Top accent bar */}
-      <div className="h-1.5 bg-gradient-to-r from-[#3B2D8E] to-[#6DC944]" />
+      <div className="h-1.5 bg-gradient-to-r from-[#3B2D8E] to-[#6DC944] flex-shrink-0" />
 
       {/* Header section */}
       <div className="px-10 pt-8 pb-6">
@@ -166,9 +166,9 @@ export function DocumentPreview(props: DocumentPreviewProps) {
             {props.items.map((item, idx) => (
               <tr key={idx} className={idx % 2 === 0 ? "bg-surface-50/50" : ""}>
                 <td className="py-3 px-2 text-xs text-surface-700">{item.description}</td>
-                <td className="py-3 px-2 text-right text-xs text-surface-600 font-mono">{formatCurrency(item.rate)}</td>
-                <td className="py-3 px-2 text-right text-xs text-surface-600 font-mono">{item.hours}</td>
-                <td className="py-3 px-2 text-right text-xs font-semibold text-surface-800 font-mono">{formatCurrency(item.amount)}</td>
+                <td className="py-3 px-2 text-right text-xs text-surface-600 font-mono">{formatCurrency(parseFloat(String(item.rate)) || 0)}</td>
+                <td className="py-3 px-2 text-right text-xs text-surface-600 font-mono">{parseFloat(String(item.hours)) || 0}</td>
+                <td className="py-3 px-2 text-right text-xs font-semibold text-surface-800 font-mono">{formatCurrency(parseFloat(String(item.amount)) || 0)}</td>
               </tr>
             ))}
           </tbody>
@@ -278,8 +278,11 @@ export function DocumentPreview(props: DocumentPreviewProps) {
         </div>
       )}
 
+      {/* Spacer pushes footer to bottom of A4 */}
+      <div className="flex-1" />
+
       {/* Footer */}
-      <div className="border-t border-surface-200 bg-surface-50/50">
+      <div className="border-t border-surface-200 bg-surface-50/50 flex-shrink-0 mt-auto">
         <div className="px-10 py-5 flex items-center justify-between">
           <div>
             <p className="text-[10px] font-semibold text-surface-400 uppercase tracking-widest">Logix Layer N.V.</p>

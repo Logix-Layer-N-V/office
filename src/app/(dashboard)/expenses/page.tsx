@@ -7,12 +7,16 @@ import { Modal } from "@/components/ui/modal"
 import { useApi } from "@/hooks/use-api"
 import type { Expense } from "@/types"
 import { formatCurrency, formatDate, getStatusColor } from "@/lib/utils"
+import { ListToolbar, applyFilters, type ActiveFilter } from "@/components/ui/list-toolbar"
 import { StatCard } from "@/components/ui/stat-card"
 import { TrendingDown } from "lucide-react"
 
 export default function ExpensesPage() {
   const [showCreate, setShowCreate] = useState(false)
   const { data: expenses, loading } = useApi<Expense[]>("/api/expenses", [])
+  const [search, setSearch] = useState("")
+  const [filters, setFilters] = useState<ActiveFilter[]>([])
+  const [activeTab, setActiveTab] = useState("all")
 
   if (loading) {
     return (
@@ -25,13 +29,29 @@ export default function ExpensesPage() {
     )
   }
 
-  const mockExpenses = expenses
-
-  const totalExpenses = mockExpenses.reduce((s, e) => s + (parseFloat(String(e.amount)) || 0), 0)
-  const byCategory = mockExpenses.reduce((acc, e) => {
-    acc[e.category] = (acc[e.category] || 0) + e.amount
+  const totalExpenses = expenses.reduce((s, e) => s + (parseFloat(String(e.amount)) || 0), 0)
+  const byCategory = expenses.reduce((acc, e) => {
+    acc[e.category] = (acc[e.category] || 0) + (parseFloat(String(e.amount)) || 0)
     return acc
   }, {} as Record<string, number>)
+
+  let filtered = applyFilters(
+    expenses as unknown as Record<string, unknown>[],
+    search,
+    filters,
+    ["description", "vendor", "category"]
+  ) as unknown as Expense[]
+
+  if (activeTab !== "all") {
+    filtered = filtered.filter(e => e.status === activeTab.toUpperCase())
+  }
+
+  const quickFilters = [
+    { value: "all", label: "All", count: expenses.length },
+    { value: "pending", label: "Pending", count: expenses.filter(e => e.status === "PENDING").length },
+    { value: "approved", label: "Approved", count: expenses.filter(e => e.status === "APPROVED").length },
+    { value: "paid", label: "Paid", count: expenses.filter(e => e.status === "PAID").length },
+  ]
 
   const columns = [
     { key: "description", label: "Description", render: (r: Expense) => <span className="font-medium text-surface-800">{r.description}</span> },
@@ -62,8 +82,32 @@ export default function ExpensesPage() {
           </div>
         </div>
 
+        <div className="card p-4">
+          <ListToolbar
+            storageKey="expenses"
+            searchPlaceholder="Search expenses..."
+            filterOptions={[
+              { key: "status", label: "Status", type: "select", options: [
+                { value: "PENDING", label: "Pending" }, { value: "APPROVED", label: "Approved" },
+                { value: "REJECTED", label: "Rejected" }, { value: "PAID", label: "Paid" },
+              ]},
+              { key: "category", label: "Category", type: "select", options: [
+                { value: "SOFTWARE", label: "Software" }, { value: "HARDWARE", label: "Hardware" },
+                { value: "OFFICE", label: "Office" }, { value: "TRAVEL", label: "Travel" },
+                { value: "MARKETING", label: "Marketing" }, { value: "SALARY", label: "Salary" },
+                { value: "CONTRACTOR", label: "Contractor" }, { value: "UTILITIES", label: "Utilities" },
+                { value: "OTHER", label: "Other" },
+              ]},
+            ]}
+            quickFilters={quickFilters}
+            activeQuickFilter={activeTab}
+            onQuickFilterChange={setActiveTab}
+            onChange={(s, f) => { setSearch(s); setFilters(f) }}
+          />
+        </div>
+
         <div className="card">
-          <DataTable columns={columns} data={mockExpenses} />
+          <DataTable columns={columns} data={filtered} />
         </div>
       </div>
 

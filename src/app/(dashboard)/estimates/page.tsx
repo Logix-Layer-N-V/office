@@ -1,15 +1,20 @@
 "use client"
 
+import { useState } from "react"
 import { Header } from "@/components/dashboard/header"
 import { DataTable } from "@/components/ui/data-table"
 import { useApi } from "@/hooks/use-api"
 import type { Estimate, Client } from "@/types"
 import { formatCurrency, formatDate, getStatusColor } from "@/lib/utils"
+import { ListToolbar, applyFilters, type ActiveFilter } from "@/components/ui/list-toolbar"
 import { ArrowRightLeft } from "lucide-react"
 
 export default function EstimatesPage() {
   const { data: estimates, loading } = useApi<Estimate[]>("/api/estimates", [])
   const { data: clients } = useApi<Client[]>("/api/clients", [])
+  const [search, setSearch] = useState("")
+  const [filters, setFilters] = useState<ActiveFilter[]>([])
+  const [activeTab, setActiveTab] = useState("all")
 
   if (loading) {
     return (
@@ -22,8 +27,24 @@ export default function EstimatesPage() {
     )
   }
 
-  const mockEstimates = estimates
-  const mockClients = clients
+  let filtered = applyFilters(
+    estimates as unknown as Record<string, unknown>[],
+    search,
+    filters,
+    ["number", "title", "client"]
+  ) as unknown as Estimate[]
+
+  if (activeTab !== "all") {
+    filtered = filtered.filter(e => e.status === activeTab.toUpperCase())
+  }
+
+  const quickFilters = [
+    { value: "all", label: "All", count: estimates.length },
+    { value: "draft", label: "Draft", count: estimates.filter(e => e.status === "DRAFT").length },
+    { value: "sent", label: "Sent", count: estimates.filter(e => e.status === "SENT").length },
+    { value: "accepted", label: "Accepted", count: estimates.filter(e => e.status === "ACCEPTED").length },
+    { value: "converted", label: "Converted", count: estimates.filter(e => e.status === "CONVERTED").length },
+  ]
 
   const columns = [
     { key: "number", label: "Number", render: (r: Estimate) => (
@@ -54,20 +75,28 @@ export default function EstimatesPage() {
       <Header title="Estimates" subtitle="Create estimates and convert to invoices" action={{ label: "New Estimate", href: "/estimates/new" }} />
 
       <div className="p-4 md:p-6 space-y-4">
+        <div className="card p-4">
+          <ListToolbar
+            storageKey="estimates"
+            searchPlaceholder="Search estimates..."
+            filterOptions={[
+              { key: "status", label: "Status", type: "select", options: [
+                { value: "DRAFT", label: "Draft" }, { value: "SENT", label: "Sent" },
+                { value: "ACCEPTED", label: "Accepted" }, { value: "REJECTED", label: "Rejected" },
+                { value: "CONVERTED", label: "Converted" },
+              ]},
+            ]}
+            quickFilters={quickFilters}
+            activeQuickFilter={activeTab}
+            onQuickFilterChange={setActiveTab}
+            onChange={(s, f) => { setSearch(s); setFilters(f) }}
+          />
+        </div>
+
         <div className="card">
-          <div className="flex items-center justify-between px-4 py-3 border-b border-surface-100">
-            <div className="flex gap-1">
-              {["All", "Draft", "Sent", "Accepted", "Converted"].map((f) => (
-                <button key={f} className={`rounded-md px-2.5 py-1 text-2xs font-medium ${f === "All" ? "bg-surface-100 text-surface-700" : "text-surface-400 hover:text-surface-600"}`}>
-                  {f}
-                </button>
-              ))}
-            </div>
-          </div>
-          <DataTable columns={columns} data={mockEstimates} />
+          <DataTable columns={columns} data={filtered} />
         </div>
       </div>
-
     </div>
   )
 }

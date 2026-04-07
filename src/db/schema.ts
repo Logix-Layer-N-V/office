@@ -26,6 +26,11 @@ export const expenseCategoryEnum = pgEnum("ExpenseCategory", ["SOFTWARE", "HARDW
 export const expenseStatusEnum = pgEnum("ExpenseStatus", ["PENDING", "APPROVED", "REJECTED", "PAID"])
 export const loanStatusEnum = pgEnum("LoanStatus", ["ACTIVE", "PAID_OFF", "DEFAULTED"])
 export const accountTypeEnum = pgEnum("AccountType", ["ASSET", "LIABILITY", "EQUITY", "REVENUE", "EXPENSE"])
+export const projectStatusEnum = pgEnum("ProjectStatus", ["PLANNING", "ACTIVE", "ON_HOLD", "COMPLETED", "CANCELLED"])
+export const projectPriorityEnum = pgEnum("ProjectPriority", ["LOW", "MEDIUM", "HIGH", "CRITICAL"])
+export const workOrderStatusEnum = pgEnum("WorkOrderStatus", ["OPEN", "IN_PROGRESS", "REVIEW", "COMPLETED", "CANCELLED"])
+export const taskStatusEnum = pgEnum("TaskStatus", ["TODO", "IN_PROGRESS", "REVIEW", "DONE", "CANCELLED"])
+export const taskPriorityEnum = pgEnum("TaskPriority", ["LOW", "MEDIUM", "HIGH", "CRITICAL"])
 
 // ─── Organization ──────────────────────────────
 
@@ -244,6 +249,38 @@ export const credits = pgTable("credits", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 })
 
+// ─── Vendors ──────────────────────────────────
+
+export const vendors = pgTable("vendors", {
+  id: text("id").primaryKey(),
+  name: text("name").notNull(),
+  email: text("email"),
+  phone: text("phone"),
+  company: text("company"),
+  address: text("address"),
+  taxId: text("tax_id"),
+  website: text("website"),
+  notes: text("notes"),
+  isActive: boolean("is_active").notNull().default(true),
+  organizationId: text("organization_id").notNull().references(() => organizations.id),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+})
+
+// ─── Expense Categories ───────────────────────
+
+export const expenseCategories = pgTable("expense_categories", {
+  id: text("id").primaryKey(),
+  name: text("name").notNull(),
+  description: text("description"),
+  color: text("color").notNull().default("#6B7280"),
+  budget: decimal("budget", { precision: 12, scale: 2 }),
+  isActive: boolean("is_active").notNull().default(true),
+  organizationId: text("organization_id").notNull().references(() => organizations.id),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+})
+
 // ─── Expenses ──────────────────────────────────
 
 export const expenses = pgTable("expenses", {
@@ -276,6 +313,61 @@ export const loans = pgTable("loans", {
   status: loanStatusEnum("status").notNull().default("ACTIVE"),
   notes: text("notes"),
   organizationId: text("organization_id").notNull().references(() => organizations.id),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+})
+
+// ─── Projects ─────────────────────────────────
+
+export const projects = pgTable("projects", {
+  id: text("id").primaryKey(),
+  name: text("name").notNull(),
+  description: text("description"),
+  status: projectStatusEnum("status").notNull().default("PLANNING"),
+  priority: projectPriorityEnum("priority").notNull().default("MEDIUM"),
+  clientId: text("client_id").notNull().references(() => clients.id),
+  organizationId: text("organization_id").notNull().references(() => organizations.id),
+  budget: decimal("budget", { precision: 14, scale: 2 }).default("0"),
+  progress: integer("progress").notNull().default(0),
+  startDate: timestamp("start_date"),
+  deadline: timestamp("deadline"),
+  completedAt: timestamp("completed_at"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+})
+
+// ─── Work Orders ──────────────────────────────
+
+export const workOrders = pgTable("work_orders", {
+  id: text("id").primaryKey(),
+  number: text("number").notNull(),
+  title: text("title").notNull(),
+  description: text("description"),
+  status: workOrderStatusEnum("status").notNull().default("OPEN"),
+  projectId: text("project_id").references(() => projects.id),
+  clientId: text("client_id").notNull().references(() => clients.id),
+  organizationId: text("organization_id").notNull().references(() => organizations.id),
+  hours: decimal("hours", { precision: 8, scale: 2 }).default("0"),
+  rate: decimal("rate", { precision: 10, scale: 2 }).default("0"),
+  date: timestamp("date").notNull().defaultNow(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+})
+
+// ─── Tasks ────────────────────────────────────
+
+export const tasks = pgTable("tasks", {
+  id: text("id").primaryKey(),
+  title: text("title").notNull(),
+  description: text("description"),
+  status: taskStatusEnum("status").notNull().default("TODO"),
+  priority: taskPriorityEnum("priority").notNull().default("MEDIUM"),
+  projectId: text("project_id").references(() => projects.id),
+  clientId: text("client_id").references(() => clients.id),
+  assigneeId: text("assignee_id").references(() => members.id),
+  organizationId: text("organization_id").notNull().references(() => organizations.id),
+  dueDate: timestamp("due_date"),
+  completedAt: timestamp("completed_at"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 })

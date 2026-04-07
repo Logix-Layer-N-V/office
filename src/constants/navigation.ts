@@ -26,6 +26,8 @@ import {
   ListTodo,
   Settings,
   Zap,
+  Building2,
+  Tags,
   type LucideIcon,
 } from "lucide-react"
 
@@ -68,6 +70,16 @@ export const navigation: NavGroup[] = [
     ],
   },
   {
+    title: "Bills",
+    items: [
+      { label: "Expenses", href: "/expenses", icon: TrendingDown },
+      { label: "Expense Categories", href: "/expense-categories", icon: Tags },
+      { label: "Credits", href: "/credits", icon: Wallet },
+      { label: "Loans", href: "/loans", icon: Landmark },
+      { label: "Vendors", href: "/vendors", icon: Building2 },
+    ],
+  },
+  {
     title: "Project Management",
     items: [
       { label: "Projects", href: "/projects", icon: FolderKanban },
@@ -87,9 +99,6 @@ export const navigation: NavGroup[] = [
   {
     title: "Accounting",
     items: [
-      { label: "Expenses", href: "/expenses", icon: TrendingDown },
-      { label: "Credits", href: "/credits", icon: Wallet },
-      { label: "Loans", href: "/loans", icon: Landmark },
       { label: "General Ledger", href: "/general-ledger", icon: BookOpen },
     ],
   },

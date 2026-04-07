@@ -1,16 +1,21 @@
 "use client"
 
+import { useState } from "react"
 import { Header } from "@/components/dashboard/header"
 import { DataTable } from "@/components/ui/data-table"
 import { useApi } from "@/hooks/use-api"
 import type { Proposal, Client } from "@/types"
 import { formatCurrency, formatDate, getStatusColor } from "@/lib/utils"
-import { FileText, Send, Check, X, Clock } from "lucide-react"
+import { ListToolbar, applyFilters, type ActiveFilter } from "@/components/ui/list-toolbar"
+import { FileText, Check, Clock } from "lucide-react"
 import { StatCard } from "@/components/ui/stat-card"
 
 export default function ProposalsPage() {
   const { data: proposals, loading } = useApi<Proposal[]>("/api/proposals", [])
   const { data: clients } = useApi<Client[]>("/api/clients", [])
+  const [search, setSearch] = useState("")
+  const [filters, setFilters] = useState<ActiveFilter[]>([])
+  const [activeTab, setActiveTab] = useState("all")
 
   if (loading) {
     return (
@@ -23,8 +28,20 @@ export default function ProposalsPage() {
     )
   }
 
-  const mockProposals = proposals
-  const mockClients = clients
+  // Apply search + filters
+  let filtered = applyFilters(
+    proposals as unknown as Record<string, unknown>[],
+    search,
+    filters,
+    ["number", "title", "client"]
+  ) as unknown as Proposal[]
+
+  // Apply quick filter tab
+  if (activeTab !== "all") {
+    filtered = filtered.filter(p => p.status === activeTab.toUpperCase())
+  }
+
+  const clientOptions = clients.map(c => ({ value: c.id, label: c.name }))
 
   const columns = [
     { key: "number", label: "Number", render: (r: Proposal) => (
@@ -45,18 +62,25 @@ export default function ProposalsPage() {
   ]
 
   const stats = {
-    total: mockProposals.length,
-    approved: mockProposals.filter(p => p.status === "APPROVED").length,
-    pending: mockProposals.filter(p => p.status === "SENT").length,
-    value: mockProposals.reduce((s, p) => s + parseFloat(String(p.total) || "0"), 0),
+    total: proposals.length,
+    approved: proposals.filter(p => p.status === "APPROVED").length,
+    pending: proposals.filter(p => p.status === "SENT").length,
+    value: proposals.reduce((s, p) => s + parseFloat(String(p.total) || "0"), 0),
   }
+
+  const quickFilters = [
+    { value: "all", label: "All", count: proposals.length },
+    { value: "draft", label: "Draft", count: proposals.filter(p => p.status === "DRAFT").length },
+    { value: "sent", label: "Sent", count: proposals.filter(p => p.status === "SENT").length },
+    { value: "approved", label: "Approved", count: proposals.filter(p => p.status === "APPROVED").length },
+    { value: "rejected", label: "Rejected", count: proposals.filter(p => p.status === "REJECTED").length },
+  ]
 
   return (
     <div>
       <Header title="Proposals" subtitle="Create and manage client proposals" action={{ label: "New Proposal", href: "/proposals/new" }} />
 
       <div className="p-4 md:p-6 space-y-4">
-        {/* Quick stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           <StatCard title="Total" value={String(stats.total)} icon={FileText} iconColor="text-surface-600" />
           <StatCard title="Approved" value={String(stats.approved)} icon={Check} iconColor="text-emerald-600" />
@@ -64,21 +88,27 @@ export default function ProposalsPage() {
           <StatCard title="Total Value" value={formatCurrency(stats.value)} icon={FileText} iconColor="text-brand-600" />
         </div>
 
-        {/* Table */}
+        <div className="card p-4">
+          <ListToolbar
+            storageKey="proposals"
+            searchPlaceholder="Search proposals..."
+            filterOptions={[
+              { key: "status", label: "Status", type: "select", options: [
+                { value: "DRAFT", label: "Draft" }, { value: "SENT", label: "Sent" },
+                { value: "APPROVED", label: "Approved" }, { value: "REJECTED", label: "Rejected" },
+              ]},
+            ]}
+            quickFilters={quickFilters}
+            activeQuickFilter={activeTab}
+            onQuickFilterChange={setActiveTab}
+            onChange={(s, f) => { setSearch(s); setFilters(f) }}
+          />
+        </div>
+
         <div className="card">
-          <div className="flex items-center justify-between px-4 py-3 border-b border-surface-100">
-            <div className="flex gap-1">
-              {["All", "Draft", "Sent", "Approved"].map((f) => (
-                <button key={f} className={`rounded-md px-2.5 py-1 text-2xs font-medium ${f === "All" ? "bg-surface-100 text-surface-700" : "text-surface-400 hover:text-surface-600"}`}>
-                  {f}
-                </button>
-              ))}
-            </div>
-          </div>
-          <DataTable columns={columns} data={mockProposals} />
+          <DataTable columns={columns} data={filtered} />
         </div>
       </div>
-
     </div>
   )
 }

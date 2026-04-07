@@ -29,7 +29,19 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     const body = await req.json()
     const [updated] = await db
       .update(payments)
-      .set({ ...body })
+      .set({
+        ...(body.client !== undefined && { clientId: body.client }),
+        ...(body.clientId !== undefined && { clientId: body.clientId }),
+        ...(body.invoice !== undefined && { invoiceId: body.invoice }),
+        ...(body.invoiceId !== undefined && { invoiceId: body.invoiceId }),
+        ...(body.amount !== undefined && { amount: String(body.amount) }),
+        ...(body.method !== undefined && { method: body.method }),
+        ...(body.status !== undefined && { status: body.status }),
+        ...(body.date !== undefined && { receivedAt: new Date(body.date) }),
+        ...(body.receivedAt !== undefined && { receivedAt: new Date(body.receivedAt) }),
+        ...(body.bankAccountId !== undefined && { bankAccountId: body.bankAccountId }),
+        ...(body.notes !== undefined && { notes: body.notes }),
+      })
       .where(eq(payments.id, id))
       .returning()
     const [client] = await db.select().from(clients).where(eq(clients.id, updated.clientId))
@@ -40,7 +52,8 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       ? (await db.select().from(bankAccounts).where(eq(bankAccounts.id, updated.bankAccountId)))[0] ?? null
       : null
     return NextResponse.json({ ...updated, client: client ?? null, invoice, bankAccount })
-  } catch {
+  } catch (err) {
+    console.error("Payment PUT error:", err)
     return NextResponse.json({ error: "Failed to update" }, { status: 500 })
   }
 }
