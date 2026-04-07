@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation"
 import { Bell, ChevronRight, Home, User, Shield, FileText, LogOut, Settings, ChevronDown, X } from "lucide-react"
 import { GlobalSearch } from "@/components/ui/global-search"
 import { QuickCreate } from "@/components/ui/quick-create"
+import { useClerk, useUser } from "@clerk/nextjs"
 
 interface HeaderProps {
   title: string
@@ -79,6 +80,12 @@ export function Header({ title, subtitle, action }: HeaderProps) {
   const [notifications, setNotifications] = useState<Notification[]>(MOCK_NOTIFICATIONS)
   const notifRef = useRef<HTMLDivElement>(null)
   const profileRef = useRef<HTMLDivElement>(null)
+  const { signOut } = useClerk()
+  const { user } = useUser()
+
+  const userInitial = user?.firstName?.[0] || user?.emailAddresses?.[0]?.emailAddress?.[0]?.toUpperCase() || "U"
+  const userName = user?.firstName || user?.emailAddresses?.[0]?.emailAddress?.split("@")[0] || "User"
+  const userEmail = user?.emailAddresses?.[0]?.emailAddress || ""
 
   const unreadCount = notifications.filter((n) => !n.read).length
 
@@ -244,10 +251,10 @@ export function Header({ title, subtitle, action }: HeaderProps) {
               className="flex items-center gap-1.5 rounded-lg px-1.5 py-1 hover:bg-surface-100 transition-colors"
             >
               <div className="h-6 w-6 rounded-full bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center text-white text-[10px] font-bold">
-                K
+                {userInitial}
               </div>
               <div className="hidden lg:block text-left">
-                <p className="text-2xs font-medium text-surface-700 leading-tight">Kento</p>
+                <p className="text-2xs font-medium text-surface-700 leading-tight">{userName}</p>
                 <p className="text-[10px] text-surface-400 leading-tight">Admin</p>
               </div>
               <ChevronDown className={`hidden lg:block h-2.5 w-2.5 text-surface-400 transition-transform ${showProfile ? "rotate-180" : ""}`} />
@@ -259,11 +266,11 @@ export function Header({ title, subtitle, action }: HeaderProps) {
                 <div className="px-4 py-3 border-b border-surface-100 bg-surface-50/50">
                   <div className="flex items-center gap-3">
                     <div className="h-9 w-9 rounded-full bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center text-white text-sm font-bold shadow-sm">
-                      K
+                      {userInitial}
                     </div>
                     <div>
-                      <p className="text-sm font-semibold text-surface-800">Kento</p>
-                      <p className="text-2xs text-surface-400">kento@logixlayer.com</p>
+                      <p className="text-sm font-semibold text-surface-800">{userName}</p>
+                      <p className="text-2xs text-surface-400">{userEmail}</p>
                     </div>
                   </div>
                 </div>
@@ -307,7 +314,7 @@ export function Header({ title, subtitle, action }: HeaderProps) {
                 {/* Logout */}
                 <div className="border-t border-surface-100 py-1.5">
                   <button
-                    onClick={() => setShowProfile(false)}
+                    onClick={() => { setShowProfile(false); signOut({ redirectUrl: "/sign-in" }) }}
                     className="flex w-full items-center gap-3 px-4 py-2 text-xs text-red-500 hover:bg-red-50 hover:text-red-600 transition-colors"
                   >
                     <LogOut className="h-3.5 w-3.5" />
