@@ -250,9 +250,13 @@ export function Header({ title, subtitle, action }: HeaderProps) {
               onClick={() => { setShowProfile(!showProfile); setShowNotifications(false) }}
               className="flex items-center gap-1.5 rounded-lg px-1.5 py-1 hover:bg-surface-100 transition-colors"
             >
-              <div className="h-6 w-6 rounded-full bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center text-white text-[10px] font-bold">
-                {userInitial}
-              </div>
+              {user?.imageUrl ? (
+                <img src={user.imageUrl} alt={userName} className="h-6 w-6 rounded-full object-cover" />
+              ) : (
+                <div className="h-6 w-6 rounded-full bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center text-white text-[10px] font-bold">
+                  {userInitial}
+                </div>
+              )}
               <div className="hidden lg:block text-left">
                 <p className="text-2xs font-medium text-surface-700 leading-tight">{userName}</p>
                 <p className="text-[10px] text-surface-400 leading-tight">Admin</p>
@@ -265,9 +269,13 @@ export function Header({ title, subtitle, action }: HeaderProps) {
                 {/* Profile header */}
                 <div className="px-4 py-3 border-b border-surface-100 bg-surface-50/50">
                   <div className="flex items-center gap-3">
-                    <div className="h-9 w-9 rounded-full bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center text-white text-sm font-bold shadow-sm">
-                      {userInitial}
-                    </div>
+                    {user?.imageUrl ? (
+                      <img src={user.imageUrl} alt={userName} className="h-9 w-9 rounded-full object-cover shadow-sm" />
+                    ) : (
+                      <div className="h-9 w-9 rounded-full bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center text-white text-sm font-bold shadow-sm">
+                        {userInitial}
+                      </div>
+                    )}
                     <div>
                       <p className="text-sm font-semibold text-surface-800">{userName}</p>
                       <p className="text-2xs text-surface-400">{userEmail}</p>

@@ -61,9 +61,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               onClick={() => setProfileOpen(!profileOpen)}
               className="flex items-center gap-1.5 rounded-lg p-1 hover:bg-surface-100 transition-colors"
             >
-              <div className="h-7 w-7 rounded-full bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center text-white text-[11px] font-bold">
-                {initials}
-              </div>
+              {user?.imageUrl ? (
+                <img src={user.imageUrl} alt={displayName} className="h-7 w-7 rounded-full object-cover" />
+              ) : (
+                <div className="h-7 w-7 rounded-full bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center text-white text-[11px] font-bold">
+                  {initials}
+                </div>
+              )}
             </button>
             {profileOpen && (
               <>
