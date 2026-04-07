@@ -4,6 +4,7 @@ import { useState } from "react"
 import { Sidebar } from "@/components/dashboard/sidebar"
 import { Menu, Bell, Plus } from "lucide-react"
 import { LogixLogo } from "@/components/ui/logix-logo"
+import { UserButton, useUser } from "@clerk/nextjs"
 import Link from "next/link"
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -46,13 +47,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <Bell className="h-4.5 w-4.5" />
             <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[9px] font-bold text-white">3</span>
           </Link>
-          <Link
-            href="/settings"
-            className="rounded-lg p-2 text-surface-500 hover:bg-surface-100"
-            aria-label="Profile"
-          >
-            <div className="h-7 w-7 rounded-full bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center text-white text-[11px] font-bold">K</div>
-          </Link>
+          <div className="rounded-lg p-1.5">
+            <UserButton afterSignOutUrl="/sign-in" />
+          </div>
         </div>
       </header>
 

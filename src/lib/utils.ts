@@ -60,6 +60,13 @@ export function getStatusColor(status: string): string {
     PAID: "badge-success",
     COMPLETED: "badge-success",
     ACTIVE: "badge-success",
+    OPEN: "badge-neutral",
+    TODO: "badge-neutral",
+    IN_PROGRESS: "badge-info",
+    REVIEW: "badge-warning",
+    PLANNING: "badge-neutral",
+    ON_HOLD: "badge-warning",
+    DONE: "badge-success",
     PENDING: "badge-warning",
     PARTIAL: "badge-warning",
     VIEWED: "badge-info",
@@ -73,8 +80,17 @@ export function getStatusColor(status: string): string {
   return colors[status] || "badge-neutral"
 }
 
+// --- Safe number conversion (Drizzle decimal fields return strings) ---
+export function toNum(val: unknown): number {
+  if (typeof val === "number") return isNaN(val) ? 0 : val
+  if (typeof val === "string") return parseFloat(val) || 0
+  return 0
+}
+
 // --- Percentage calculation ---
-export function calcPercentage(value: number, total: number): number {
-  if (total === 0) return 0
-  return Math.round((value / total) * 100)
+export function calcPercentage(value: number | string, total: number | string): number {
+  const v = toNum(value)
+  const t = toNum(total)
+  if (t === 0) return 0
+  return Math.round((v / t) * 100)
 }

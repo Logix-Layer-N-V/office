@@ -5,10 +5,10 @@ import Link from "next/link";
 import { Header } from "@/components/dashboard/header";
 import { useApi } from "@/hooks/use-api";
 import type { WorkOrder, Client } from "@/types";
-import { formatCurrency, formatDate, getStatusColor } from "@/lib/utils";
+import { formatCurrency, formatDate, getStatusColor, toNum } from "@/lib/utils";
 import { LayoutList, Grid3x3, GanttChart, Clock } from "lucide-react";
 
-type FilterStatus = "ALL" | "COMPLETED" | "IN_PROGRESS" | "TODO";
+type FilterStatus = "ALL" | "COMPLETED" | "IN_PROGRESS" | "OPEN" | "REVIEW" | "CANCELLED";
 type ViewMode = "list" | "kanban" | "gantt" | "timeline";
 
 export default function WorkOrdersPage() {
@@ -38,10 +38,10 @@ export default function WorkOrdersPage() {
 
   const stats = {
     total: mockWorkOrders.length,
-    todo: mockWorkOrders.filter((w) => w.status === "TODO").length,
+    todo: mockWorkOrders.filter((w) => w.status === "OPEN").length,
     inProgress: mockWorkOrders.filter((w) => w.status === "IN_PROGRESS").length,
     completed: mockWorkOrders.filter((w) => w.status === "COMPLETED").length,
-    totalRevenue: mockWorkOrders.reduce((sum, w) => sum + w.hours * w.rate, 0),
+    totalRevenue: mockWorkOrders.reduce((sum, w) => sum + toNum(w.hours) * toNum(w.rate), 0),
   };
 
   const getClientName = (clientId: string) => {
@@ -50,12 +50,16 @@ export default function WorkOrdersPage() {
 
   const getStatusBorderColor = (status: string): string => {
     switch (status) {
-      case "TODO":
+      case "OPEN":
         return "border-l-4 border-l-surface-300";
       case "IN_PROGRESS":
         return "border-l-4 border-l-blue-500";
       case "COMPLETED":
         return "border-l-4 border-l-emerald-500";
+      case "REVIEW":
+        return "border-l-4 border-l-purple-500";
+      case "CANCELLED":
+        return "border-l-4 border-l-red-400";
       default:
         return "border-l-4 border-l-surface-300";
     }
@@ -63,12 +67,16 @@ export default function WorkOrdersPage() {
 
   const getStatusBarColor = (status: string): string => {
     switch (status) {
-      case "TODO":
+      case "OPEN":
         return "bg-surface-400";
       case "IN_PROGRESS":
         return "bg-brand-600";
       case "COMPLETED":
         return "bg-emerald-500";
+      case "REVIEW":
+        return "bg-purple-500";
+      case "CANCELLED":
+        return "bg-red-400";
       default:
         return "bg-surface-400";
     }
@@ -76,12 +84,16 @@ export default function WorkOrdersPage() {
 
   const getStatusBgColor = (status: string): string => {
     switch (status) {
-      case "TODO":
+      case "OPEN":
         return "bg-surface-50";
       case "IN_PROGRESS":
         return "bg-blue-50";
       case "COMPLETED":
         return "bg-emerald-50";
+      case "REVIEW":
+        return "bg-purple-50";
+      case "CANCELLED":
+        return "bg-red-50";
       default:
         return "bg-surface-50";
     }
@@ -98,7 +110,7 @@ export default function WorkOrdersPage() {
             <p className="mt-2 text-2xl font-bold text-surface-900">{stats.total}</p>
           </div>
           <div className="card p-4">
-            <p className="text-xs font-semibold uppercase text-surface-600">TODO</p>
+            <p className="text-xs font-semibold uppercase text-surface-600">Open</p>
             <p className="mt-2 text-2xl font-bold text-surface-900">{stats.todo}</p>
           </div>
           <div className="card p-4">
@@ -143,7 +155,7 @@ export default function WorkOrdersPage() {
           {/* Status Filter Tabs (for list/kanban views) */}
           {(viewMode === "list" || viewMode === "kanban") && (
             <div className="flex gap-2 border-b border-surface-200">
-              {["ALL", "TODO", "IN_PROGRESS", "COMPLETED"].map((status) => (
+              {["ALL", "OPEN", "IN_PROGRESS", "REVIEW", "COMPLETED", "CANCELLED"].map((status) => (
                 <button
                   key={status}
                   onClick={() => setFilterStatus(status as FilterStatus)}
@@ -205,7 +217,7 @@ export default function WorkOrdersPage() {
                         href={`/projects/${wo.projectId}`}
                         className="text-sm text-brand-600 hover:text-brand-700"
                       >
-                        {wo.project}
+                        {wo.project?.name || "—"}
                       </Link>
                     </td>
                     <td className="px-4 py-3 text-sm text-surface-800">{getClientName(wo.clientId)}</td>
@@ -221,7 +233,7 @@ export default function WorkOrdersPage() {
                     <td className="px-4 py-3 text-sm text-surface-800">{wo.assignee}</td>
                     <td className="px-4 py-3 text-sm font-semibold text-surface-800">{wo.hours}h</td>
                     <td className="px-4 py-3 text-sm font-semibold text-surface-800">
-                      {formatCurrency(wo.hours * wo.rate)}
+                      {formatCurrency(toNum(wo.hours) * toNum(wo.rate))}
                     </td>
                     <td className="px-4 py-3 text-sm text-surface-600">
                       {formatDate(wo.date)}
@@ -236,7 +248,7 @@ export default function WorkOrdersPage() {
         {/* KANBAN VIEW */}
         {viewMode === "kanban" && (
           <div className="flex gap-6 overflow-x-auto pb-4">
-            {["TODO", "IN_PROGRESS", "COMPLETED"].map((status) => {
+            {["OPEN", "IN_PROGRESS", "REVIEW", "COMPLETED", "CANCELLED"].map((status) => {
               const statusWOs = filteredWorkOrders.filter((wo) => wo.status === (status as any));
               return (
                 <div
@@ -246,11 +258,15 @@ export default function WorkOrdersPage() {
                   <div className="flex items-center gap-2">
                     <div
                       className={`h-2 w-2 rounded-full ${
-                        status === "TODO"
+                        status === "OPEN"
                           ? "bg-surface-300"
                           : status === "IN_PROGRESS"
                             ? "bg-blue-500"
-                            : "bg-emerald-500"
+                            : status === "REVIEW"
+                              ? "bg-purple-500"
+                              : status === "COMPLETED"
+                                ? "bg-emerald-500"
+                                : "bg-red-400"
                       }`}
                     />
                     <h3 className="font-semibold text-surface-900">
@@ -267,7 +283,7 @@ export default function WorkOrdersPage() {
                       >
                         <p className="font-bold text-surface-900">{wo.number}</p>
                         <p className="mt-1 text-sm text-surface-700">{wo.title}</p>
-                        <p className="mt-2 text-xs text-surface-600">{wo.project}</p>
+                        <p className="mt-2 text-xs text-surface-600">{wo.project?.name || "—"}</p>
                         <div className="mt-3 flex items-center justify-between border-t border-surface-100 pt-2">
                           <span className="text-xs font-medium text-surface-600">{wo.assignee}</span>
                           <span className="text-xs font-semibold text-surface-900">{wo.hours}h</span>
@@ -275,7 +291,7 @@ export default function WorkOrdersPage() {
                         <div className="mt-2 flex items-center justify-between">
                           <span className="text-xs text-surface-600">{formatDate(wo.date)}</span>
                           <span className="text-xs font-semibold text-brand-600">
-                            {formatCurrency(wo.hours * wo.rate)}
+                            {formatCurrency(toNum(wo.hours) * toNum(wo.rate))}
                           </span>
                         </div>
                       </div>
@@ -385,7 +401,7 @@ export default function WorkOrdersPage() {
                                 href={`/projects/${wo.projectId}`}
                                 className="text-brand-600 hover:text-brand-700"
                               >
-                                {wo.project}
+                                {wo.project?.name || "—"}
                               </Link>
                             </p>
                           </div>
@@ -400,7 +416,7 @@ export default function WorkOrdersPage() {
                         <div className="mt-3 flex items-center justify-between border-t border-surface-100 pt-3 text-xs text-surface-600">
                           <span>{wo.assignee}</span>
                           <span>
-                            {wo.hours}h · {formatCurrency(wo.hours * wo.rate)}
+                            {wo.hours}h · {formatCurrency(toNum(wo.hours) * toNum(wo.rate))}
                           </span>
                           <span>{formatDate(wo.date)}</span>
                         </div>

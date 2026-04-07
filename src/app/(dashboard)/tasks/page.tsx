@@ -15,7 +15,7 @@ import {
 type ViewMode = "list" | "kanban" | "gantt" | "timeline";
 
 interface KanbanColumn {
-  status: "TODO" | "IN_PROGRESS" | "DONE";
+  status: "TODO" | "IN_PROGRESS" | "REVIEW" | "DONE" | "CANCELLED";
   title: string;
   count: number;
   bgLight: string;
@@ -120,6 +120,9 @@ export default function TasksPage() {
     return `Due in ${days} days`;
   };
 
+  const reviewCount = taskList.filter((t) => t.status === "REVIEW").length;
+  const cancelledCount = taskList.filter((t) => t.status === "CANCELLED").length;
+
   const kanbanColumns: KanbanColumn[] = [
     {
       status: "TODO",
@@ -140,6 +143,15 @@ export default function TasksPage() {
       dotColor: "bg-blue-500",
     },
     {
+      status: "REVIEW",
+      title: "Review",
+      count: reviewCount,
+      bgLight: "purple-50",
+      bgDark: "purple-100",
+      borderColor: "border-purple-500",
+      dotColor: "bg-purple-500",
+    },
+    {
       status: "DONE",
       title: "Done",
       count: doneCount,
@@ -147,6 +159,15 @@ export default function TasksPage() {
       bgDark: "emerald-100",
       borderColor: "border-emerald-500",
       dotColor: "bg-emerald-500",
+    },
+    {
+      status: "CANCELLED",
+      title: "Cancelled",
+      count: cancelledCount,
+      bgLight: "red-50",
+      bgDark: "red-100",
+      borderColor: "border-red-400",
+      dotColor: "bg-red-400",
     },
   ];
 
@@ -285,7 +306,7 @@ export default function TasksPage() {
                         {task.status.replace(/_/g, " ")}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-sm text-surface-800">{task.assignee}</td>
+                    <td className="px-4 py-3 text-sm text-surface-800">{task.assignee?.name || "—"}</td>
                     <td className="px-4 py-3 text-sm text-surface-600">
                       {formatDate(task.dueDate)}
                     </td>
@@ -331,9 +352,9 @@ export default function TasksPage() {
                           <div className="mt-3 flex items-center justify-between">
                             <div className="flex items-center gap-2">
                               <div className="flex h-6 w-6 items-center justify-center rounded-full bg-surface-300 text-2xs font-bold text-surface-700">
-                                {getInitial(task.assignee)}
+                                {getInitial(task.assignee?.name || "?")}
                               </div>
-                              <span className="text-2xs text-surface-600">{task.assignee}</span>
+                              <span className="text-2xs text-surface-600">{task.assignee?.name || "—"}</span>
                             </div>
                             <span
                               className={`inline-block rounded px-2 py-1 text-2xs font-semibold ${getPriorityBadgeColor(
@@ -375,7 +396,7 @@ export default function TasksPage() {
                       {/* Left Panel */}
                       <div className="w-48 flex-shrink-0">
                         <p className="truncate text-sm font-medium text-surface-800">{task.title}</p>
-                        <p className="text-2xs text-surface-600">{task.assignee}</p>
+                        <p className="text-2xs text-surface-600">{task.assignee?.name || "—"}</p>
                       </div>
 
                       {/* Right Panel - Timeline Bar */}
@@ -482,10 +503,10 @@ export default function TasksPage() {
 
                               <div className="mt-3 flex items-center gap-2">
                                 <div className="flex h-6 w-6 items-center justify-center rounded-full bg-surface-300 text-2xs font-bold text-surface-700">
-                                  {getInitial(task.assignee)}
+                                  {getInitial(task.assignee?.name || "?")}
                                 </div>
                                 <span className="text-2xs text-surface-600">
-                                  {task.assignee}
+                                  {task.assignee?.name || "—"}
                                 </span>
                               </div>
                             </div>

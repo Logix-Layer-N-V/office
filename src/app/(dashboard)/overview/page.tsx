@@ -191,7 +191,7 @@ export default function OverviewPage() {
               <div className="flex items-center justify-between">
                 <span className="text-2xs text-surface-500">Won rate</span>
                 <span className="text-xs font-semibold text-brand-600">
-                  {Math.round((dashboardKPIs.proposalsWon / dashboardKPIs.proposalsTotal) * 100)}%
+                  {dashboardKPIs.proposalsTotal > 0 ? Math.round((dashboardKPIs.proposalsWon / dashboardKPIs.proposalsTotal) * 100) : 0}%
                 </span>
               </div>
               <p className="text-2xs text-surface-400 mt-1">

@@ -5,7 +5,7 @@ import { Header } from "@/components/dashboard/header"
 import { Modal } from "@/components/ui/modal"
 import { useApi } from "@/hooks/use-api"
 import type { Loan } from "@/types"
-import { formatCurrency, formatDate, getStatusColor, calcPercentage } from "@/lib/utils"
+import { formatCurrency, formatDate, getStatusColor, calcPercentage, toNum } from "@/lib/utils"
 import { ListToolbar, applyFilters, type ActiveFilter } from "@/components/ui/list-toolbar"
 import { StatCard } from "@/components/ui/stat-card"
 import { Landmark, CalendarClock } from "lucide-react"
@@ -77,7 +77,7 @@ export default function LoansPage() {
 
         <div className="space-y-3">
           {filtered.map((loan) => {
-            const paidPercent = calcPercentage(loan.amount - loan.remainingBalance, loan.amount)
+            const paidPercent = calcPercentage(toNum(loan.amount) - toNum(loan.remainingBalance), toNum(loan.amount))
             return (
               <div key={loan.id} className="card p-4">
                 <div className="flex items-start justify-between mb-3">

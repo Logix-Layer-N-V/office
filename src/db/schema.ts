@@ -347,6 +347,7 @@ export const workOrders = pgTable("work_orders", {
   projectId: text("project_id").references(() => projects.id),
   clientId: text("client_id").notNull().references(() => clients.id),
   organizationId: text("organization_id").notNull().references(() => organizations.id),
+  assignee: text("assignee"),
   hours: decimal("hours", { precision: 8, scale: 2 }).default("0"),
   rate: decimal("rate", { precision: 10, scale: 2 }).default("0"),
   date: timestamp("date").notNull().defaultNow(),

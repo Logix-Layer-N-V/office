@@ -1,19 +1,27 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { Pencil, Trash2 } from "lucide-react";
 import { Header } from "@/components/dashboard/header";
-import { useApi } from "@/hooks/use-api";
-import { formatCurrency, formatDate, getStatusColor } from "@/lib/utils";
-import type { Project, WorkOrder, Task } from "@/types";
+import { useApi, apiMutate } from "@/hooks/use-api";
+import { formatCurrency, formatDate, getStatusColor, toNum } from "@/lib/utils";
+import type { Project, WorkOrder, Task, ProjectStatus, ProjectPriority, Client } from "@/types";
 
 type TabType = "overview" | "workorders" | "tasks" | "gantt";
 
-export default function ProjectDetailPage({ params }: { params: { id: string } }) {
+export default function ProjectDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const resolvedParams = React.use(params);
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState<TabType>("overview");
-  const { data: project, loading } = useApi<Project | null>(`/api/projects/${params.id}`, null);
-  const { data: workOrders = [] } = useApi<WorkOrder[]>("/api/workorders", []);
+  const [editing, setEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const { data: project, loading, refresh } = useApi<Project | null>(`/api/projects/${resolvedParams.id}`, null);
+  const { data: workOrders = [] } = useApi<WorkOrder[]>("/api/work-orders", []);
   const { data: tasks = [] } = useApi<Task[]>("/api/tasks", []);
+  const { data: clients = [] } = useApi<Client[]>("/api/clients", []);
+  const [editForm, setEditForm] = useState<Record<string, any>>({});
 
   if (loading) {
     return (
@@ -41,8 +49,10 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
   const projectWorkOrders = workOrders.filter((wo) => wo.projectId === project.id);
   const projectTasks = tasks.filter((t) => t.projectId === project.id);
 
-  const budgetUsagePercent = Math.min((project.spent / project.budget) * 100, 100);
-  const totalHours = projectWorkOrders.reduce((sum, wo) => sum + wo.hours, 0);
+  const budget = parseFloat(String(project.budget)) || 0;
+  const spent = (project as any).spent ?? 0;
+  const budgetUsagePercent = budget > 0 ? Math.min((spent / budget) * 100, 100) : 0;
+  const totalHours = projectWorkOrders.reduce((sum, wo) => sum + (parseFloat(String((wo as any).hours)) || 0), 0);
 
   return (
     <div className="min-h-screen bg-surface-50">
@@ -53,14 +63,123 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
           ← Back to Projects
         </Link>
 
+        {/* Edit Modal */}
+        {editing && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+            <div className="card w-full max-w-2xl mx-4 p-6">
+              <h2 className="text-lg font-bold text-surface-800 mb-4">Edit Project</h2>
+              <form className="space-y-4" onSubmit={async (e) => {
+                e.preventDefault();
+                setSaving(true);
+                try {
+                  await apiMutate(`/api/projects/${project.id}`, "PUT", editForm);
+                  setEditing(false);
+                  refresh();
+                } catch { /* error handled silently */ }
+                setSaving(false);
+              }}>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="label">Project Name *</label>
+                    <input className="input w-full" value={editForm.name || ""} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} />
+                  </div>
+                  <div>
+                    <label className="label">Client</label>
+                    <select className="input w-full" value={editForm.clientId || ""} onChange={(e) => setEditForm({ ...editForm, clientId: e.target.value })}>
+                      {clients.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                    </select>
+                  </div>
+                </div>
+                <div className="grid grid-cols-3 gap-4">
+                  <div>
+                    <label className="label">Status</label>
+                    <select className="input w-full" value={editForm.status || ""} onChange={(e) => setEditForm({ ...editForm, status: e.target.value })}>
+                      <option value="PLANNING">Planning</option>
+                      <option value="ACTIVE">Active</option>
+                      <option value="ON_HOLD">On Hold</option>
+                      <option value="COMPLETED">Completed</option>
+                      <option value="CANCELLED">Cancelled</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="label">Priority</label>
+                    <select className="input w-full" value={editForm.priority || ""} onChange={(e) => setEditForm({ ...editForm, priority: e.target.value })}>
+                      <option value="LOW">Low</option>
+                      <option value="MEDIUM">Medium</option>
+                      <option value="HIGH">High</option>
+                      <option value="CRITICAL">Critical</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="label">Budget</label>
+                    <input type="number" className="input w-full" value={editForm.budget || ""} onChange={(e) => setEditForm({ ...editForm, budget: e.target.value })} />
+                  </div>
+                </div>
+                <div className="grid grid-cols-3 gap-4">
+                  <div>
+                    <label className="label">Progress (%)</label>
+                    <input type="number" min="0" max="100" className="input w-full" value={editForm.progress ?? ""} onChange={(e) => setEditForm({ ...editForm, progress: parseInt(e.target.value) || 0 })} />
+                  </div>
+                  <div>
+                    <label className="label">Start Date</label>
+                    <input type="date" className="input w-full" value={editForm.startDate || ""} onChange={(e) => setEditForm({ ...editForm, startDate: e.target.value })} />
+                  </div>
+                  <div>
+                    <label className="label">Deadline</label>
+                    <input type="date" className="input w-full" value={editForm.deadline || ""} onChange={(e) => setEditForm({ ...editForm, deadline: e.target.value })} />
+                  </div>
+                </div>
+                <div>
+                  <label className="label">Description</label>
+                  <textarea className="input w-full" rows={3} value={editForm.description || ""} onChange={(e) => setEditForm({ ...editForm, description: e.target.value })} />
+                </div>
+                <div className="flex justify-end gap-3 pt-4 border-t border-surface-200">
+                  <button type="button" onClick={() => setEditing(false)} className="btn-secondary">Cancel</button>
+                  <button type="submit" className="btn-primary" disabled={saving}>{saving ? "Saving..." : "Save Changes"}</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
         {/* Project Header */}
         <div className="card mb-6">
           <div className="mb-4 flex items-start justify-between">
             <div>
               <h1 className="text-2xl font-bold text-surface-800">{project?.name}</h1>
-              <p className="text-surface-600">{project?.clientId}</p>
+              <p className="text-surface-600">{(project as any)?.client?.name || "—"}</p>
             </div>
-            <div className="flex gap-2">
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => {
+                  setEditForm({
+                    name: project.name,
+                    clientId: project.clientId,
+                    status: project.status,
+                    priority: project.priority,
+                    budget: toNum(project.budget),
+                    progress: project.progress,
+                    startDate: project.startDate ? new Date(project.startDate).toISOString().split("T")[0] : "",
+                    deadline: project.deadline ? new Date(project.deadline).toISOString().split("T")[0] : "",
+                    description: project.description || "",
+                  });
+                  setEditing(true);
+                }}
+                className="btn-secondary"
+              >
+                <Pencil className="h-3.5 w-3.5" /> Edit
+              </button>
+              <button
+                onClick={async () => {
+                  if (confirm("Are you sure you want to delete this project?")) {
+                    await apiMutate(`/api/projects/${project.id}`, "DELETE");
+                    router.push("/projects");
+                  }
+                }}
+                className="btn-secondary text-red-600 hover:bg-red-50"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </button>
               <span
                 className={`inline-block rounded px-3 py-1 text-sm font-semibold ${getStatusColor(
                   project?.status || "PLANNING"
@@ -89,9 +208,9 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
             <div>
               <p className="text-2xs uppercase tracking-wider text-surface-500">Budget</p>
               <p className="mt-1 text-lg font-bold text-surface-800">
-                {formatCurrency(project?.spent || 0)}
+                {formatCurrency(spent)}
               </p>
-              <p className="text-2xs text-surface-600">of {formatCurrency(project?.budget || 0)}</p>
+              <p className="text-2xs text-surface-600">of {formatCurrency(budget)}</p>
             </div>
             <div>
               <p className="text-2xs uppercase tracking-wider text-surface-500">Progress</p>
@@ -99,7 +218,7 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
             </div>
             <div>
               <p className="text-2xs uppercase tracking-wider text-surface-500">Hours</p>
-              <p className="mt-1 text-lg font-bold text-surface-800">{totalHours}h</p>
+              <p className="mt-1 text-lg font-bold text-surface-800">{Math.round(totalHours)}h</p>
             </div>
             <div>
               <p className="text-2xs uppercase tracking-wider text-surface-500">Deadline</p>
@@ -156,7 +275,7 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
                   <div className="mb-2 flex items-center justify-between">
                     <span className="text-xs text-surface-600">Spent</span>
                     <span className="font-semibold text-surface-800">
-                      {formatCurrency(project?.spent || 0)}
+                      {formatCurrency(spent)}
                     </span>
                   </div>
                   <div className="h-2 bg-surface-200 rounded-full overflow-hidden">
@@ -168,7 +287,7 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
                   <div className="mt-2 flex items-center justify-between">
                     <span className="text-xs text-surface-600">Remaining</span>
                     <span className="font-semibold text-surface-800">
-                      {formatCurrency(Math.max((project?.budget || 0) - (project?.spent || 0), 0))}
+                      {formatCurrency(Math.max(budget - spent, 0))}
                     </span>
                   </div>
                 </div>
@@ -219,7 +338,7 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
                     <td className="px-4 py-3 text-sm text-surface-800">{wo.assignee}</td>
                     <td className="px-4 py-3 text-sm text-surface-800">{wo.hours}h</td>
                     <td className="px-4 py-3 text-sm font-semibold text-surface-800">
-                      {formatCurrency(wo.hours * wo.rate)}
+                      {formatCurrency(toNum(wo.hours) * toNum(wo.rate))}
                     </td>
                   </tr>
                 ))}
@@ -278,7 +397,7 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
                         {task.status.replace(/_/g, " ")}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-sm text-surface-800">{task.assignee}</td>
+                    <td className="px-4 py-3 text-sm text-surface-800">{task.assignee?.name || "—"}</td>
                     <td className="px-4 py-3 text-sm text-surface-800">
                       {formatDate(task.dueDate)}
                     </td>

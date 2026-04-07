@@ -21,10 +21,10 @@ export type CreditStatus = "ACTIVE" | "USED" | "EXPIRED" | "CANCELLED"
 export type LoanStatus = "ACTIVE" | "PAID_OFF" | "DEFAULTED"
 export type AccountType = "ASSET" | "LIABILITY" | "EQUITY" | "REVENUE" | "EXPENSE"
 export type MemberRole = "OWNER" | "ADMIN" | "MEMBER" | "VIEWER"
-export type ProjectStatus = "PLANNING" | "IN_PROGRESS" | "COMPLETED" | "ON_HOLD" | "CANCELLED"
+export type ProjectStatus = "PLANNING" | "ACTIVE" | "COMPLETED" | "ON_HOLD" | "CANCELLED"
 export type ProjectPriority = "LOW" | "MEDIUM" | "HIGH" | "CRITICAL"
-export type TaskStatus = "TODO" | "IN_PROGRESS" | "DONE"
-export type WorkOrderStatus = "TODO" | "IN_PROGRESS" | "COMPLETED"
+export type TaskStatus = "TODO" | "IN_PROGRESS" | "REVIEW" | "DONE" | "CANCELLED"
+export type WorkOrderStatus = "OPEN" | "IN_PROGRESS" | "REVIEW" | "COMPLETED" | "CANCELLED"
 
 // ─── Organization & Auth ───────────────────────
 
@@ -383,52 +383,64 @@ export interface LedgerEntry {
   ref?: string
 }
 
-// ─── Projects (Mock data — not in Prisma yet) ─
+// ─── Projects ─────────────────────────────────
 
 export interface Project {
   id: string
   name: string
   clientId: string
-  client: string
+  client?: Client | null
   status: ProjectStatus
   priority: ProjectPriority
   progress: number
-  budget: number
-  spent: number
+  budget: number | string
+  spent?: number
   startDate: string
   deadline: string
   description: string
+  organizationId: string
+  completedAt?: string | null
+  createdAt: string
+  updatedAt: string
 }
 
-// ─── Work Orders (Mock data — not in Prisma yet) ─
+// ─── Work Orders ──────────────────────────────
 
 export interface WorkOrder {
   id: string
   number: string
   title: string
   projectId: string
-  project: string
+  project?: Project | null
   clientId: string
   status: WorkOrderStatus
-  assignee: string
-  hours: number
-  rate: number
+  assignee?: string | null
+  hours: number | string
+  rate: number | string
   date: string
+  description?: string
+  organizationId: string
+  createdAt: string
+  updatedAt: string
 }
 
-// ─── Tasks (Mock data — not in Prisma yet) ────
+// ─── Tasks ────────────────────────────────────
 
 export interface Task {
   id: string
   title: string
   projectId: string
-  workOrderId: string
-  clientId: string
+  project?: Project | null
+  assigneeId?: string | null
+  assignee?: Member | null
+  clientId?: string
   status: TaskStatus
   priority: ProjectPriority
-  assignee: string
   dueDate: string
+  description?: string
+  organizationId: string
   createdAt: string
+  updatedAt: string
 }
 
 // ─── Client API Keys (Mock data — not in Prisma yet) ─

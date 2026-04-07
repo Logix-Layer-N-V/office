@@ -11,7 +11,7 @@ import { useState } from "react"
 import { useParams, useRouter } from "next/navigation"
 import Link from "next/link"
 import { useApi } from "@/hooks/use-api"
-import { formatCurrency, formatDate, getStatusColor } from "@/lib/utils"
+import { formatCurrency, formatDate, getStatusColor, toNum } from "@/lib/utils"
 import {
   ArrowLeft,
   User,
@@ -663,7 +663,7 @@ export default function ClientDetailPage() {
                             <span className={getStatusColor(wo.status)}>{wo.status}</span>
                           </td>
                           <td className="text-right text-surface-800">{wo.hours}h</td>
-                          <td className="text-right font-semibold text-surface-800">{formatCurrency(wo.hours * wo.rate)}</td>
+                          <td className="text-right font-semibold text-surface-800">{formatCurrency(toNum(wo.hours) * toNum(wo.rate))}</td>
                           <td className="text-surface-600">{formatDate(wo.date)}</td>
                         </tr>
                       ))}

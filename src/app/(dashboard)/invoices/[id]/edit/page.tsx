@@ -5,7 +5,7 @@ import { useParams, useRouter } from "next/navigation"
 import { DetailHeader } from "@/components/ui/detail-header"
 import { LineItemsEditor, type LineItem } from "@/components/ui/line-items-editor"
 import { useApi, apiMutate } from "@/hooks/use-api"
-import { formatCurrency } from "@/lib/utils"
+import { formatCurrency, toNum } from "@/lib/utils"
 import { Save, Send } from "lucide-react"
 import type { Invoice, Client } from "@/types"
 
@@ -70,7 +70,7 @@ export default function InvoiceEditPage() {
     }
   }
 
-  const subtotal = items.reduce((s, i) => s + i.amount, 0)
+  const subtotal = items.reduce((s, i) => s + toNum(i.amount), 0)
 
   return (
     <div>

@@ -7,7 +7,7 @@ import type { Column } from "@/components/ui/data-table"
 import { Modal } from "@/components/ui/modal"
 import { useApi } from "@/hooks/use-api"
 import type { Credit } from "@/types"
-import { formatCurrency, formatDate, getStatusColor } from "@/lib/utils"
+import { formatCurrency, formatDate, getStatusColor, toNum } from "@/lib/utils"
 import { ListToolbar, applyFilters, type ActiveFilter } from "@/components/ui/list-toolbar"
 
 export default function CreditsPage() {
@@ -51,7 +51,7 @@ export default function CreditsPage() {
     { key: "description", label: "Description" },
     { key: "status", label: "Status", render: (r: Credit) => <span className={getStatusColor(r.status)}>{r.status}</span> },
     { key: "amount", label: "Amount", align: "right" as const, render: (r: Credit) => <span className="font-medium">{formatCurrency(r.amount)}</span> },
-    { key: "remaining", label: "Remaining", align: "right" as const, render: (r: Credit) => <span className={`font-medium ${r.remaining > 0 ? "text-emerald-600" : "text-surface-400"}`}>{formatCurrency(r.remaining)}</span> },
+    { key: "remaining", label: "Remaining", align: "right" as const, render: (r: Credit) => <span className={`font-medium ${toNum(r.remaining) > 0 ? "text-emerald-600" : "text-surface-400"}`}>{formatCurrency(r.remaining)}</span> },
     { key: "issuedAt", label: "Issued", render: (r: Credit) => formatDate(r.issuedAt) },
   ]
 

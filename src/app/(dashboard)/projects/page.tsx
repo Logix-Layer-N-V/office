@@ -13,7 +13,7 @@ type FilterStatus = "ALL" | ProjectStatus;
 
 const STATUS_ORDER: ProjectStatus[] = [
   "PLANNING",
-  "IN_PROGRESS",
+  "ACTIVE",
   "ON_HOLD",
   "COMPLETED",
   "CANCELLED",
@@ -21,7 +21,7 @@ const STATUS_ORDER: ProjectStatus[] = [
 
 const STATUS_COLORS: Record<ProjectStatus, { bg: string; border: string; dot: string }> = {
   PLANNING: { bg: "bg-surface-50", border: "border-l-surface-400", dot: "bg-surface-400" },
-  IN_PROGRESS: { bg: "bg-blue-50", border: "border-l-blue-500", dot: "bg-blue-500" },
+  ACTIVE: { bg: "bg-blue-50", border: "border-l-blue-500", dot: "bg-blue-500" },
   ON_HOLD: { bg: "bg-amber-50", border: "border-l-amber-500", dot: "bg-amber-500" },
   COMPLETED: { bg: "bg-emerald-50", border: "border-l-emerald-500", dot: "bg-emerald-500" },
   CANCELLED: { bg: "bg-red-50", border: "border-l-red-400", dot: "bg-red-400" },
@@ -29,7 +29,7 @@ const STATUS_COLORS: Record<ProjectStatus, { bg: string; border: string; dot: st
 
 const GANTT_COLORS: Record<ProjectStatus, string> = {
   PLANNING: "bg-surface-400",
-  IN_PROGRESS: "bg-brand-600",
+  ACTIVE: "bg-brand-600",
   ON_HOLD: "bg-amber-500",
   COMPLETED: "bg-emerald-500",
   CANCELLED: "bg-red-400",
@@ -49,9 +49,9 @@ export default function ProjectsPage() {
     if (!projects) return { total: 0, inProgress: 0, completed: 0, budget: 0 };
     return {
       total: projects.length,
-      inProgress: projects.filter((p) => p.status === "IN_PROGRESS").length,
+      inProgress: projects.filter((p) => p.status === "ACTIVE").length,
       completed: projects.filter((p) => p.status === "COMPLETED").length,
-      budget: projects.reduce((sum, p) => sum + p.budget, 0),
+      budget: projects.reduce((sum, p) => sum + parseFloat(String(p.budget)) || 0, 0),
     };
   }, [projects]);
 
@@ -155,7 +155,7 @@ function ListView({ projects }: { projects: Project[] }) {
           <div className="mb-4 flex items-start justify-between">
             <div>
               <h3 className="font-semibold text-surface-800">{project.name}</h3>
-              <p className="text-sm text-surface-600">{project.client}</p>
+              <p className="text-sm text-surface-600">{project.client?.name || "—"}</p>
             </div>
           </div>
 
@@ -192,13 +192,13 @@ function ListView({ projects }: { projects: Project[] }) {
             <div className="mb-1 flex items-center justify-between">
               <span className="text-xs text-surface-600">Budget</span>
               <span className="text-xs font-semibold text-surface-700">
-                {formatCurrency(project.spent)} / {formatCurrency(project.budget)}
+                {formatCurrency((project as any).spent ?? 0)} / {formatCurrency(project.budget)}
               </span>
             </div>
             <div className="h-2 bg-surface-200 rounded-full overflow-hidden">
               <div
                 className="h-full bg-amber-500 transition-all"
-                style={{ width: `${Math.min((project.spent / project.budget) * 100, 100)}%` }}
+                style={{ width: `${Math.min(((project as any).spent ?? 0 / project.budget) * 100, 100)}%` }}
               />
             </div>
           </div>
@@ -246,7 +246,7 @@ function KanbanView({ projects }: { projects: Project[] }) {
                   className={`card p-3 border-l-4 hover:shadow-md transition-shadow ${STATUS_COLORS[column.status].border}`}
                 >
                   <h4 className="font-medium text-sm text-surface-800 mb-1">{project.name}</h4>
-                  <p className="text-xs text-surface-600 mb-2">{project.client}</p>
+                  <p className="text-xs text-surface-600 mb-2">{project.client?.name || "—"}</p>
 
                   <div className="mb-2 flex gap-1">
                     <span
@@ -274,7 +274,7 @@ function KanbanView({ projects }: { projects: Project[] }) {
                     </div>
                   </div>
 
-                  <div className="text-xs text-surface-600">{formatCurrency(project.spent)} / {formatCurrency(project.budget)}</div>
+                  <div className="text-xs text-surface-600">{formatCurrency((project as any).spent ?? 0)} / {formatCurrency(project.budget)}</div>
                   <div className="text-xs text-surface-600 mt-1">
                     {formatDate(project.startDate)} → {formatDate(project.deadline)}
                   </div>
@@ -333,7 +333,7 @@ function GanttView({ projects, allProjects }: { projects: Project[]; allProjects
             <div key={project.id} className="h-12 bg-surface-50 border-b border-surface-200 flex items-center px-3">
               <div>
                 <p className="text-xs font-semibold text-surface-800">{project.name}</p>
-                <p className="text-2xs text-surface-600">{project.client}</p>
+                <p className="text-2xs text-surface-600">{project.client?.name || "—"}</p>
               </div>
             </div>
           ))}
@@ -423,7 +423,7 @@ function TimelineView({ projects }: { projects: Project[] }) {
                 <div className="flex items-start justify-between mb-2">
                   <div>
                     <h4 className="font-semibold text-surface-800">{project.name}</h4>
-                    <p className="text-sm text-surface-600">{project.client}</p>
+                    <p className="text-sm text-surface-600">{project.client?.name || "—"}</p>
                   </div>
                   <span className={`inline-block rounded px-2 py-1 text-2xs font-semibold ${getStatusColor(project.status)}`}>
                     {project.status.replace(/_/g, " ")}
@@ -460,7 +460,7 @@ function TimelineView({ projects }: { projects: Project[] }) {
                 </div>
 
                 <div className="text-xs text-surface-600">
-                  {formatCurrency(project.spent)} / {formatCurrency(project.budget)}
+                  {formatCurrency((project as any).spent ?? 0)} / {formatCurrency(project.budget)}
                 </div>
               </Link>
             ))}

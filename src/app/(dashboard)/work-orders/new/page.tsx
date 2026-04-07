@@ -20,7 +20,7 @@ export default function WorkOrdersNewPage() {
     assignee: "",
     hours: 0,
     rate: 65,
-    status: "TODO" as WorkOrderStatus,
+    status: "OPEN" as WorkOrderStatus,
     date: "",
   })
 
@@ -168,9 +168,11 @@ export default function WorkOrdersNewPage() {
                     value={workOrder.status}
                     onChange={(e) => setWorkOrder((v) => ({ ...v, status: e.target.value as WorkOrderStatus }))}
                   >
-                    <option value="TODO">To Do</option>
+                    <option value="OPEN">Open</option>
                     <option value="IN_PROGRESS">In Progress</option>
+                    <option value="REVIEW">Review</option>
                     <option value="COMPLETED">Completed</option>
+                    <option value="CANCELLED">Cancelled</option>
                   </select>
                 </div>
               </div>

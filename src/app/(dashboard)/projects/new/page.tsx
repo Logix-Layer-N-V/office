@@ -108,7 +108,7 @@ export default function ProjectsNewPage() {
                     onChange={(e) => setProject((v) => ({ ...v, status: e.target.value as ProjectStatus }))}
                   >
                     <option value="PLANNING">Planning</option>
-                    <option value="IN_PROGRESS">In Progress</option>
+                    <option value="ACTIVE">In Progress</option>
                     <option value="COMPLETED">Completed</option>
                     <option value="ON_HOLD">On Hold</option>
                     <option value="CANCELLED">Cancelled</option>

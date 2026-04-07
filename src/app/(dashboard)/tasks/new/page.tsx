@@ -143,7 +143,7 @@ export default function TasksNewPage() {
                     type="text"
                     className="input w-full bg-surface-100"
                     placeholder="Auto-filled from project"
-                    value={selectedProject?.client || ""}
+                    value={selectedProject?.client?.name || ""}
                     disabled
                   />
                 </div>
@@ -173,7 +173,9 @@ export default function TasksNewPage() {
                   >
                     <option value="TODO">To Do</option>
                     <option value="IN_PROGRESS">In Progress</option>
+                    <option value="REVIEW">Review</option>
                     <option value="DONE">Done</option>
+                    <option value="CANCELLED">Cancelled</option>
                   </select>
                 </div>
               </div>
