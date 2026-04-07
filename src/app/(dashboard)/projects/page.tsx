@@ -222,61 +222,81 @@ function KanbanView({ projects }: { projects: Project[] }) {
     count: projects.filter((p) => p.status === status).length,
   }));
 
+  const getPriorityDot = (priority: string) => {
+    switch (priority) {
+      case "CRITICAL": return "bg-red-500"
+      case "HIGH": return "bg-orange-500"
+      case "MEDIUM": return "bg-amber-500"
+      default: return "bg-surface-400"
+    }
+  }
+
+  const getProgressColor = (progress: number) => {
+    if (progress >= 100) return "bg-emerald-500"
+    if (progress >= 50) return "bg-brand-500"
+    return "bg-amber-500"
+  }
+
   return (
     <div className="overflow-x-auto">
-      <div className="flex gap-6 pb-4">
+      <div className="flex gap-4 pb-4" style={{ minWidth: `${columns.length * 280}px` }}>
         {columns.map((column) => (
-          <div
-            key={column.status}
-            className={`flex-shrink-0 w-80 rounded-lg border border-surface-200 overflow-hidden ${STATUS_COLORS[column.status].bg}`}
-          >
-            <div className="border-b border-surface-200 bg-white px-4 py-3 flex items-center gap-2">
-              <div className={`w-3 h-3 rounded-full ${STATUS_COLORS[column.status].dot}`} />
-              <h3 className="font-semibold text-surface-800 text-sm flex-1">{column.status.replace(/_/g, " ")}</h3>
-              <span className="inline-flex items-center justify-center rounded-full bg-surface-100 px-2 py-0.5 text-xs font-semibold text-surface-700">
+          <div key={column.status} className="flex-1 min-w-[260px]">
+            {/* Column header */}
+            <div className="flex items-center gap-2 px-1 mb-3">
+              <span className={`h-2 w-2 rounded-full ${STATUS_COLORS[column.status].dot}`} />
+              <h3 className="text-xs font-semibold uppercase tracking-wider text-surface-600">
+                {column.status.replace(/_/g, " ")}
+              </h3>
+              <span className="ml-auto rounded-full bg-surface-100 px-1.5 py-0.5 text-[10px] font-semibold text-surface-500">
                 {column.count}
               </span>
             </div>
 
-            <div className="p-3 space-y-3">
+            {/* Column body */}
+            <div className="space-y-2.5">
+              {column.projects.length === 0 && (
+                <div className="rounded-lg border border-dashed border-surface-200 p-6 text-center">
+                  <p className="text-2xs text-surface-400">No projects</p>
+                </div>
+              )}
               {column.projects.map((project) => (
                 <Link
                   key={project.id}
                   href={`/projects/${project.id}`}
-                  className={`card p-3 border-l-4 hover:shadow-md transition-shadow ${STATUS_COLORS[column.status].border}`}
+                  className="block rounded-lg border border-surface-200 bg-white p-3.5 hover:shadow-md hover:border-surface-300 transition-all group"
                 >
-                  <h4 className="font-medium text-sm text-surface-800 mb-1">{project.name}</h4>
-                  <p className="text-xs text-surface-600 mb-2">{project.client?.name || "—"}</p>
+                  {/* Title & client */}
+                  <h4 className="text-sm font-semibold text-surface-800 group-hover:text-brand-700 transition-colors leading-snug">
+                    {project.name}
+                  </h4>
+                  <p className="text-2xs text-surface-500 mt-0.5">{project.client?.name || "—"}</p>
 
-                  <div className="mb-2 flex gap-1">
-                    <span
-                      className={`inline-block rounded px-2 py-0.5 text-2xs font-semibold ${
-                        project.priority === "CRITICAL"
-                          ? "bg-red-100 text-red-700"
-                          : project.priority === "HIGH"
-                            ? "bg-orange-100 text-orange-700"
-                            : project.priority === "MEDIUM"
-                              ? "bg-amber-100 text-amber-700"
-                              : "bg-surface-100 text-surface-700"
-                      }`}
-                    >
-                      {project.priority}
-                    </span>
+                  {/* Priority badge */}
+                  <div className="mt-2.5 flex items-center gap-1.5">
+                    <span className={`h-1.5 w-1.5 rounded-full ${getPriorityDot(project.priority)}`} />
+                    <span className="text-2xs text-surface-500">{project.priority}</span>
                   </div>
 
-                  <div className="mb-2">
+                  {/* Progress */}
+                  <div className="mt-3">
                     <div className="flex items-center justify-between mb-1">
-                      <span className="text-xs text-surface-600">Progress</span>
-                      <span className="text-xs font-semibold text-surface-700">{project.progress}%</span>
+                      <span className="text-2xs text-surface-400">Progress</span>
+                      <span className="text-2xs font-semibold text-surface-700">{project.progress}%</span>
                     </div>
-                    <div className="h-1.5 bg-surface-200 rounded-full overflow-hidden">
-                      <div className="h-full bg-brand-600" style={{ width: `${project.progress}%` }} />
+                    <div className="h-1.5 bg-surface-100 rounded-full overflow-hidden">
+                      <div className={`h-full rounded-full ${getProgressColor(project.progress)} transition-all`} style={{ width: `${project.progress}%` }} />
                     </div>
                   </div>
 
-                  <div className="text-xs text-surface-600">{formatCurrency((project as any).spent ?? 0)} / {formatCurrency(project.budget)}</div>
-                  <div className="text-xs text-surface-600 mt-1">
-                    {formatDate(project.startDate)} → {formatDate(project.deadline)}
+                  {/* Footer */}
+                  <div className="mt-3 pt-2.5 border-t border-surface-100 flex items-center justify-between">
+                    <span className="text-2xs font-medium text-surface-600">
+                      {formatCurrency(project.budget)}
+                    </span>
+                    <span className="text-[10px] text-surface-400">
+                      {formatDate(project.startDate)} → {formatDate(project.deadline)}
+                    </span>
                   </div>
                 </Link>
               ))}
