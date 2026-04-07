@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react";
 import Link from "next/link";
-import { LayoutGrid, List, BarChart3, Clock } from "lucide-react";
+import { LayoutGrid, List, BarChart3, Clock, Calendar } from "lucide-react";
 import { Header } from "@/components/dashboard/header";
 import { useApi, apiMutate } from "@/hooks/use-api";
 import type { Project, ProjectStatus } from "@/types";
@@ -497,7 +497,7 @@ function TimelineView({ projects }: { projects: Project[] }) {
   const groupedByMonth: Record<string, Project[]> = {};
   sortedProjects.forEach((project) => {
     const date = new Date(project.startDate);
-    const monthKey = date.toLocaleDateString("nl-NL", { month: "long", year: "numeric" });
+    const monthKey = date.toLocaleDateString("en-US", { month: "long", year: "numeric" });
     if (!groupedByMonth[monthKey]) {
       groupedByMonth[monthKey] = [];
     }
@@ -506,65 +506,74 @@ function TimelineView({ projects }: { projects: Project[] }) {
 
   const months = Object.entries(groupedByMonth);
 
+  const getPriorityDot = (priority: string) => {
+    switch (priority) {
+      case "CRITICAL": return "bg-red-500"
+      case "HIGH": return "bg-orange-500"
+      case "MEDIUM": return "bg-amber-500"
+      default: return "bg-surface-400"
+    }
+  }
+
   return (
-    <div className="space-y-8">
-      {months.map(([month, monthProjects], monthIndex) => (
+    <div className="max-w-3xl">
+      {months.map(([month, monthProjects]) => (
         <div key={month} className="relative">
-          <div className="flex items-center gap-4 mb-4">
-            <div className="w-px h-12 bg-surface-300" />
-            <h3 className="text-lg font-semibold text-surface-800 capitalize">{month}</h3>
+          {/* Month label */}
+          <div className="flex items-center gap-3 mb-4">
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-50 border-2 border-brand-200 z-10">
+              <Calendar className="h-3.5 w-3.5 text-brand-600" />
+            </div>
+            <h3 className="text-sm font-bold text-surface-800">{month}</h3>
           </div>
 
-          <div className="space-y-3 ml-6 pl-6 border-l border-surface-200">
+          {/* Project cards */}
+          <div className="ml-4 pl-7 border-l-2 border-surface-200 space-y-3 pb-6">
             {monthProjects.map((project) => (
               <Link
                 key={project.id}
                 href={`/projects/${project.id}`}
-                className={`card p-4 border-l-4 hover:shadow-md transition-shadow ${
-                  STATUS_COLORS[project.status].border
-                }`}
+                className="relative block rounded-lg border border-surface-200 bg-white p-4 hover:shadow-md hover:border-surface-300 transition-all group"
               >
-                <div className="flex items-start justify-between mb-2">
-                  <div>
-                    <h4 className="font-semibold text-surface-800">{project.name}</h4>
-                    <p className="text-sm text-surface-600">{project.client?.name || "—"}</p>
+                {/* Timeline dot */}
+                <div className={`absolute -left-[1.15rem] top-5 h-2.5 w-2.5 rounded-full border-2 border-white ${STATUS_COLORS[project.status].dot}`} />
+
+                {/* Header row */}
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <h4 className="text-sm font-semibold text-surface-800 group-hover:text-brand-700 transition-colors">{project.name}</h4>
+                    <p className="text-2xs text-surface-500">{project.client?.name || "—"}</p>
                   </div>
-                  <span className={`inline-block rounded px-2 py-1 text-2xs font-semibold ${getStatusColor(project.status)}`}>
+                  <span className={`flex-shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold ${getStatusColor(project.status)}`}>
                     {project.status.replace(/_/g, " ")}
                   </span>
                 </div>
 
-                <div className="flex items-center gap-3 mb-3">
-                  <span
-                    className={`inline-block rounded px-2 py-1 text-2xs font-semibold ${
-                      project.priority === "CRITICAL"
-                        ? "bg-red-100 text-red-700"
-                        : project.priority === "HIGH"
-                          ? "bg-orange-100 text-orange-700"
-                          : project.priority === "MEDIUM"
-                            ? "bg-amber-100 text-amber-700"
-                            : "bg-surface-100 text-surface-700"
-                    }`}
-                  >
-                    {project.priority}
-                  </span>
-                  <span className="text-sm text-surface-600">
+                {/* Meta row */}
+                <div className="mt-2.5 flex items-center gap-3 flex-wrap">
+                  <div className="flex items-center gap-1">
+                    <span className={`h-1.5 w-1.5 rounded-full ${getPriorityDot(project.priority)}`} />
+                    <span className="text-2xs text-surface-500">{project.priority}</span>
+                  </div>
+                  <span className="text-2xs text-surface-400">
                     {formatDate(project.startDate)} → {formatDate(project.deadline)}
                   </span>
+                  <span className="text-2xs font-medium text-surface-600">
+                    {formatCurrency(project.budget)}
+                  </span>
                 </div>
 
-                <div className="mb-3">
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-xs text-surface-600">Progress</span>
-                    <span className="text-xs font-semibold text-surface-700">{project.progress}%</span>
+                {/* Progress */}
+                <div className="mt-3 flex items-center gap-3">
+                  <div className="flex-1 h-1.5 bg-surface-100 rounded-full overflow-hidden">
+                    <div
+                      className={`h-full rounded-full ${
+                        project.progress >= 100 ? "bg-emerald-500" : project.progress >= 50 ? "bg-brand-500" : "bg-amber-500"
+                      }`}
+                      style={{ width: `${project.progress}%` }}
+                    />
                   </div>
-                  <div className="h-2 bg-surface-200 rounded-full overflow-hidden">
-                    <div className="h-full bg-brand-600" style={{ width: `${project.progress}%` }} />
-                  </div>
-                </div>
-
-                <div className="text-xs text-surface-600">
-                  {formatCurrency((project as any).spent ?? 0)} / {formatCurrency(project.budget)}
+                  <span className="text-2xs font-semibold text-surface-600 w-8 text-right">{project.progress}%</span>
                 </div>
               </Link>
             ))}
