@@ -458,9 +458,9 @@ export default function SprintsPage() {
     <div className="min-h-screen bg-surface-50">
       <Header title="Scrum Board" />
 
-      <div className="max-w-7xl mx-auto px-6 py-8">
+      <div className="p-4 md:p-6">
         {/* Tabs */}
-        <div className="flex gap-2 mb-8 border-b border-surface-200">
+        <div className="flex gap-2 mb-6 border-b border-surface-200">
           {[
             { id: "board" as const, label: "Sprint Board", icon: Columns3 },
             { id: "backlog" as const, label: "Backlog", icon: List },
