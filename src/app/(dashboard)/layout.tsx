@@ -4,7 +4,7 @@ import { useState } from "react"
 import { Sidebar } from "@/components/dashboard/sidebar"
 import { Menu, Bell, Plus } from "lucide-react"
 import { LogixLogo } from "@/components/ui/logix-logo"
-import { UserButton, useUser } from "@clerk/nextjs"
+import { UserButton } from "@clerk/nextjs"
 import Link from "next/link"
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -48,7 +48,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[9px] font-bold text-white">3</span>
           </Link>
           <div className="rounded-lg p-1.5">
-            <UserButton signInUrl="/sign-in" />
+            <UserButton />
           </div>
         </div>
       </header>
