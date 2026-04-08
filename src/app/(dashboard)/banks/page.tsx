@@ -10,7 +10,7 @@
 import { useState, useMemo, useCallback, useRef } from "react"
 import { Header } from "@/components/dashboard/header"
 import { Modal } from "@/components/ui/modal"
-import { useApi } from "@/hooks/use-api"
+import { useApi, apiMutate } from "@/hooks/use-api"
 import type { BankAccount, Transaction } from "@/types"
 import { formatCurrency, formatDate } from "@/lib/utils"
 import {
@@ -204,8 +204,42 @@ function parseDate(value: string): string {
 export default function BanksPage() {
   const [showAdd, setShowAdd] = useState(false)
   const [activeTab, setActiveTab] = useState<"accounts" | "crypto" | "transactions" | "import" | "statements">("accounts")
-  const { data: bankAccountsAll, loading } = useApi<BankAccount[]>("/api/bank-accounts", [])
+  const { data: bankAccountsAll, loading, refresh } = useApi<BankAccount[]>("/api/bank-accounts", [])
   const { data: transactions, loading: loadingTx } = useApi<Transaction[]>("/api/transactions", [])
+
+  // ─── Add Account Form State ──────────────────
+  const [accName, setAccName] = useState("")
+  const [accBank, setAccBank] = useState("")
+  const [accType, setAccType] = useState("CHECKING")
+  const [accNumber, setAccNumber] = useState("")
+  const [accCurrency, setAccCurrency] = useState("USD")
+  const [accBalance, setAccBalance] = useState("0")
+  const [accLoading, setAccLoading] = useState(false)
+  const [accError, setAccError] = useState("")
+
+  const handleCreateAccount = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!accName || !accBank || !accNumber) { setAccError("Name, Bank/Network, and Account Number are required"); return }
+    try {
+      setAccError("")
+      setAccLoading(true)
+      await apiMutate("/api/bank-accounts", "POST", {
+        name: accName,
+        bankName: accBank,
+        accountNumber: accNumber,
+        type: accType,
+        currency: accCurrency,
+        balance: parseFloat(accBalance) || 0,
+      })
+      setShowAdd(false)
+      setAccName(""); setAccBank(""); setAccType("CHECKING"); setAccNumber(""); setAccCurrency("USD"); setAccBalance("0")
+      refresh()
+    } catch (err) {
+      setAccError(err instanceof Error ? err.message : "Failed to create account")
+    } finally {
+      setAccLoading(false)
+    }
+  }
 
   // ─── CSV Import State ──────────────────────────
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -953,24 +987,29 @@ export default function BanksPage() {
       </div>
 
       <Modal open={showAdd} onClose={() => setShowAdd(false)} title="Add Account">
-        <form className="space-y-4">
-          <div><label className="label">Account Name</label><input type="text" className="input" placeholder="e.g. USDT Wallet (TRC-20)" /></div>
+        <form className="space-y-4" onSubmit={handleCreateAccount}>
+          {accError && <div className="p-2 rounded-md bg-red-50 border border-red-200 text-red-700 text-sm">{accError}</div>}
+          <div><label className="label">Account Name *</label><input type="text" className="input" placeholder="e.g. USDT Wallet (TRC-20)" value={accName} onChange={(e) => setAccName(e.target.value)} required /></div>
           <div className="grid grid-cols-2 gap-4">
-            <div><label className="label">Network / Bank</label><input type="text" className="input" placeholder="e.g. Tron Network" /></div>
+            <div><label className="label">Network / Bank *</label><input type="text" className="input" placeholder="e.g. Tron Network" value={accBank} onChange={(e) => setAccBank(e.target.value)} required /></div>
             <div><label className="label">Account Type</label>
-              <select className="input"><option>Checking</option><option>Savings</option><option>Cash</option><option>Crypto</option></select>
+              <select className="input" value={accType} onChange={(e) => setAccType(e.target.value)}>
+                <option value="CHECKING">Checking</option><option value="SAVINGS">Savings</option><option value="CASH">Cash</option><option value="CRYPTO">Crypto</option>
+              </select>
             </div>
           </div>
           <div className="grid grid-cols-2 gap-4">
-            <div><label className="label">Wallet / Account Number</label><input type="text" className="input" placeholder="Address or account #" /></div>
+            <div><label className="label">Wallet / Account Number *</label><input type="text" className="input" placeholder="Address or account #" value={accNumber} onChange={(e) => setAccNumber(e.target.value)} required /></div>
             <div><label className="label">Currency</label>
-              <select className="input"><option>USD</option><option>EUR</option><option>USDT</option><option>BTC</option><option>ETH</option></select>
+              <select className="input" value={accCurrency} onChange={(e) => setAccCurrency(e.target.value)}>
+                <option value="USD">USD</option><option value="EUR">EUR</option><option value="USDT">USDT</option><option value="BTC">BTC</option><option value="ETH">ETH</option>
+              </select>
             </div>
           </div>
-          <div><label className="label">Opening Balance</label><input type="number" className="input" step="0.01" defaultValue={0} /></div>
+          <div><label className="label">Opening Balance</label><input type="number" className="input" step="0.01" value={accBalance} onChange={(e) => setAccBalance(e.target.value)} /></div>
           <div className="flex justify-end gap-2 pt-3 border-t border-surface-200">
             <button type="button" onClick={() => setShowAdd(false)} className="btn-secondary">Cancel</button>
-            <button type="submit" className="btn-primary">Add Account</button>
+            <button type="submit" disabled={accLoading} className="btn-primary">{accLoading ? "Saving..." : "Add Account"}</button>
           </div>
         </form>
       </Modal>

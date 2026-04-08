@@ -28,7 +28,20 @@ export async function POST(req: Request) {
     const body = await req.json()
     const [payment] = await db
       .insert(payments)
-      .values({ id: crypto.randomUUID(), ...body })
+      .values({
+        id: crypto.randomUUID(),
+        number: body.number,
+        amount: String(body.amount),
+        method: body.method,
+        status: body.status ?? "PENDING",
+        reference: body.reference ?? null,
+        notes: body.notes ?? null,
+        invoiceId: body.invoiceId ?? null,
+        clientId: body.clientId,
+        bankAccountId: body.bankAccountId ?? null,
+        organizationId: body.organizationId ?? "org_default",
+        receivedAt: body.receivedAt ? new Date(body.receivedAt) : new Date(),
+      })
       .returning()
     const [client] = await db.select().from(clients).where(eq(clients.id, payment.clientId))
     const invoice = payment.invoiceId
@@ -41,7 +54,8 @@ export async function POST(req: Request) {
       { ...payment, client: client ?? null, invoice, bankAccount },
       { status: 201 }
     )
-  } catch {
+  } catch (error) {
+    console.error("Failed to create payment:", error)
     return NextResponse.json({ error: "Failed to create payment" }, { status: 500 })
   }
 }

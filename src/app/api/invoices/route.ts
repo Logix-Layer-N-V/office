@@ -26,10 +26,48 @@ export async function POST(req: Request) {
   try {
     if (!db) return NextResponse.json({ error: "Database not configured" }, { status: 503 })
     const body = await req.json()
+
+    const lineItems: { description: string; hours: number; rate: number; amount: number }[] = body.items || []
+    const subtotal = lineItems.reduce((s, i) => s + (i.amount || 0), 0)
+    const taxRate = Number(body.taxRate) || 0
+    const taxAmount = subtotal * (taxRate / 100)
+    const total = subtotal + taxAmount
+
+    const invoiceNumber = `INV-${Date.now().toString(36).toUpperCase()}`
+
     const [invoice] = await db
       .insert(invoices)
-      .values({ id: crypto.randomUUID(), ...body })
+      .values({
+        id: crypto.randomUUID(),
+        number: invoiceNumber,
+        title: body.title,
+        description: body.description || null,
+        status: body.status || "DRAFT",
+        clientId: body.clientId,
+        organizationId: body.organizationId || "org_default",
+        subtotal: String(subtotal),
+        taxRate: String(taxRate),
+        taxAmount: String(taxAmount),
+        total: String(total),
+        amountDue: String(total),
+        dueDate: body.dueDate ? new Date(body.dueDate) : new Date(),
+      })
       .returning()
+
+    if (lineItems.length > 0) {
+      await db.insert(invoiceItems).values(
+        lineItems.map((item, idx) => ({
+          id: crypto.randomUUID(),
+          invoiceId: invoice.id,
+          description: item.description || "",
+          hours: String(item.hours || 0),
+          rate: String(item.rate || 65),
+          amount: String(item.amount || 0),
+          sortOrder: idx,
+        }))
+      )
+    }
+
     const relatedItems = await db.select().from(invoiceItems).where(eq(invoiceItems.invoiceId, invoice.id))
     const [client] = await db.select().from(clients).where(eq(clients.id, invoice.clientId))
     const relatedPayments = await db.select().from(payments).where(eq(payments.invoiceId, invoice.id))
@@ -37,7 +75,8 @@ export async function POST(req: Request) {
       { ...invoice, client: client ?? null, items: relatedItems, payments: relatedPayments },
       { status: 201 }
     )
-  } catch {
+  } catch (err) {
+    console.error("Invoice POST error:", err)
     return NextResponse.json({ error: "Failed to create invoice" }, { status: 500 })
   }
 }

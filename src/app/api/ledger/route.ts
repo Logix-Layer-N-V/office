@@ -24,11 +24,21 @@ export async function POST(req: Request) {
     const body = await req.json()
     const [entry] = await db
       .insert(ledgerEntries)
-      .values({ id: crypto.randomUUID(), ...body })
+      .values({
+        id: crypto.randomUUID(),
+        date: body.date ? new Date(body.date) : new Date(),
+        description: body.description,
+        debit: String(body.debit ?? "0"),
+        credit: String(body.credit ?? "0"),
+        accountId: body.accountId,
+        reference: body.reference ?? null,
+        organizationId: body.organizationId ?? "org_default",
+      })
       .returning()
     const [account] = await db.select().from(chartOfAccounts).where(eq(chartOfAccounts.id, entry.accountId))
     return NextResponse.json({ ...entry, account: account ?? null }, { status: 201 })
-  } catch {
+  } catch (error) {
+    console.error("Failed to create ledger entry:", error)
     return NextResponse.json({ error: "Failed to create ledger entry" }, { status: 500 })
   }
 }

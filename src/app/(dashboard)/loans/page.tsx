@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { Header } from "@/components/dashboard/header"
 import { Modal } from "@/components/ui/modal"
-import { useApi } from "@/hooks/use-api"
+import { useApi, apiMutate } from "@/hooks/use-api"
 import type { Loan } from "@/types"
 import { formatCurrency, formatDate, getStatusColor, calcPercentage, toNum } from "@/lib/utils"
 import { ListToolbar, applyFilters, type ActiveFilter } from "@/components/ui/list-toolbar"
@@ -12,7 +12,42 @@ import { Landmark, CalendarClock } from "lucide-react"
 
 export default function LoansPage() {
   const [showAdd, setShowAdd] = useState(false)
-  const { data: loans, loading } = useApi<Loan[]>("/api/loans", [])
+  const { data: loans, loading, refresh } = useApi<Loan[]>("/api/loans", [])
+  const [loanName, setLoanName] = useState("")
+  const [loanLender, setLoanLender] = useState("")
+  const [loanAmount, setLoanAmount] = useState("")
+  const [loanInterest, setLoanInterest] = useState("")
+  const [loanMonthly, setLoanMonthly] = useState("")
+  const [loanStart, setLoanStart] = useState("")
+  const [loanEnd, setLoanEnd] = useState("")
+  const [loanLoading, setLoanLoading] = useState(false)
+  const [loanError, setLoanError] = useState("")
+
+  const handleCreateLoan = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!loanName || !loanLender || !loanAmount) { setLoanError("Name, Lender, and Amount are required"); return }
+    try {
+      setLoanError("")
+      setLoanLoading(true)
+      await apiMutate("/api/loans", "POST", {
+        name: loanName,
+        lender: loanLender,
+        amount: parseFloat(loanAmount),
+        remainingBalance: parseFloat(loanAmount),
+        interestRate: parseFloat(loanInterest) || 0,
+        monthlyPayment: parseFloat(loanMonthly) || 0,
+        startDate: loanStart || new Date().toISOString(),
+        endDate: loanEnd || new Date().toISOString(),
+      })
+      setShowAdd(false)
+      setLoanName(""); setLoanLender(""); setLoanAmount(""); setLoanInterest(""); setLoanMonthly(""); setLoanStart(""); setLoanEnd("")
+      refresh()
+    } catch (err) {
+      setLoanError(err instanceof Error ? err.message : "Failed to create loan")
+    } finally {
+      setLoanLoading(false)
+    }
+  }
   const [search, setSearch] = useState("")
   const [filters, setFilters] = useState<ActiveFilter[]>([])
   const [activeTab, setActiveTab] = useState("all")
@@ -104,21 +139,22 @@ export default function LoansPage() {
       </div>
 
       <Modal open={showAdd} onClose={() => setShowAdd(false)} title="Add Loan">
-        <form className="space-y-4">
-          <div><label className="label">Loan Name</label><input type="text" className="input" placeholder="e.g. Business Equipment Loan" /></div>
+        <form className="space-y-4" onSubmit={handleCreateLoan}>
+          {loanError && <div className="p-2 rounded-md bg-red-50 border border-red-200 text-red-700 text-sm">{loanError}</div>}
+          <div><label className="label">Loan Name *</label><input type="text" className="input" placeholder="e.g. Business Equipment Loan" value={loanName} onChange={(e) => setLoanName(e.target.value)} required /></div>
           <div className="grid grid-cols-2 gap-4">
-            <div><label className="label">Lender</label><input type="text" className="input" /></div>
-            <div><label className="label">Amount (USD)</label><input type="number" className="input" step="0.01" /></div>
+            <div><label className="label">Lender *</label><input type="text" className="input" value={loanLender} onChange={(e) => setLoanLender(e.target.value)} required /></div>
+            <div><label className="label">Amount (USD) *</label><input type="number" className="input" step="0.01" min="0" value={loanAmount} onChange={(e) => setLoanAmount(e.target.value)} required /></div>
           </div>
           <div className="grid grid-cols-3 gap-4">
-            <div><label className="label">Interest Rate (%)</label><input type="number" className="input" step="0.1" /></div>
-            <div><label className="label">Start Date</label><input type="date" className="input" /></div>
-            <div><label className="label">End Date</label><input type="date" className="input" /></div>
+            <div><label className="label">Interest Rate (%)</label><input type="number" className="input" step="0.1" min="0" value={loanInterest} onChange={(e) => setLoanInterest(e.target.value)} /></div>
+            <div><label className="label">Start Date</label><input type="date" className="input" value={loanStart} onChange={(e) => setLoanStart(e.target.value)} /></div>
+            <div><label className="label">End Date</label><input type="date" className="input" value={loanEnd} onChange={(e) => setLoanEnd(e.target.value)} /></div>
           </div>
-          <div><label className="label">Monthly Payment</label><input type="number" className="input" step="0.01" /></div>
+          <div><label className="label">Monthly Payment</label><input type="number" className="input" step="0.01" min="0" value={loanMonthly} onChange={(e) => setLoanMonthly(e.target.value)} /></div>
           <div className="flex justify-end gap-2 pt-3 border-t border-surface-200">
             <button type="button" onClick={() => setShowAdd(false)} className="btn-secondary">Cancel</button>
-            <button type="submit" className="btn-primary">Add Loan</button>
+            <button type="submit" disabled={loanLoading} className="btn-primary">{loanLoading ? "Saving..." : "Add Loan"}</button>
           </div>
         </form>
       </Modal>

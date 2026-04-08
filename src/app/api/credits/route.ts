@@ -19,10 +19,22 @@ export async function POST(req: Request) {
     const body = await req.json()
     const [credit] = await db
       .insert(credits)
-      .values({ id: crypto.randomUUID(), ...body })
+      .values({
+        id: crypto.randomUUID(),
+        number: body.number,
+        description: body.description,
+        amount: String(body.amount),
+        remaining: String(body.remaining),
+        status: body.status ?? "ACTIVE",
+        reason: body.reason ?? null,
+        organizationId: body.organizationId ?? "org_default",
+        issuedAt: body.issuedAt ? new Date(body.issuedAt) : new Date(),
+        expiresAt: body.expiresAt ? new Date(body.expiresAt) : null,
+      })
       .returning()
     return NextResponse.json(credit, { status: 201 })
-  } catch {
+  } catch (error) {
+    console.error("Failed to create credit:", error)
     return NextResponse.json({ error: "Failed to create credit" }, { status: 500 })
   }
 }

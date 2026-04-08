@@ -24,14 +24,23 @@ export async function POST(req: Request) {
     const body = await req.json()
     const [transaction] = await db
       .insert(transactions)
-      .values({ id: crypto.randomUUID(), ...body })
+      .values({
+        id: crypto.randomUUID(),
+        type: body.type,
+        amount: String(body.amount),
+        description: body.description,
+        reference: body.reference ?? null,
+        bankAccountId: body.bankAccountId,
+        date: body.date ? new Date(body.date) : new Date(),
+      })
       .returning()
     const [bankAccount] = await db
       .select()
       .from(bankAccounts)
       .where(eq(bankAccounts.id, transaction.bankAccountId))
     return NextResponse.json({ ...transaction, bankAccount: bankAccount ?? null }, { status: 201 })
-  } catch {
+  } catch (error) {
+    console.error("Failed to create transaction:", error)
     return NextResponse.json({ error: "Failed to create transaction" }, { status: 500 })
   }
 }

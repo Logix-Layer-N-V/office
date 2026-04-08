@@ -24,10 +24,20 @@ export async function POST(req: Request) {
     const body = await req.json()
     const [account] = await db
       .insert(chartOfAccounts)
-      .values({ id: crypto.randomUUID(), ...body })
+      .values({
+        id: crypto.randomUUID(),
+        code: body.code,
+        name: body.name,
+        type: body.type,
+        subtype: body.subtype ?? null,
+        description: body.description ?? null,
+        isActive: body.isActive ?? true,
+        organizationId: body.organizationId ?? "org_default",
+      })
       .returning()
     return NextResponse.json(account, { status: 201 })
-  } catch {
+  } catch (error) {
+    console.error("Failed to create account:", error)
     return NextResponse.json({ error: "Failed to create account" }, { status: 500 })
   }
 }

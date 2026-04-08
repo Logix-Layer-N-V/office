@@ -26,7 +26,20 @@ export async function POST(req: Request) {
     const body = await req.json()
     const [bankAccount] = await db
       .insert(bankAccounts)
-      .values({ id: crypto.randomUUID(), ...body })
+      .values({
+        id: crypto.randomUUID(),
+        name: body.name,
+        bankName: body.bankName,
+        accountNumber: body.accountNumber,
+        routingNumber: body.routingNumber ?? null,
+        iban: body.iban ?? null,
+        swift: body.swift ?? null,
+        type: body.type ?? "CHECKING",
+        currency: body.currency ?? "USD",
+        balance: String(body.balance ?? "0"),
+        isDefault: body.isDefault ?? false,
+        organizationId: body.organizationId ?? "org_default",
+      })
       .returning()
     const relatedTransactions = await db
       .select()
@@ -40,7 +53,8 @@ export async function POST(req: Request) {
       { ...bankAccount, transactions: relatedTransactions, payments: relatedPayments },
       { status: 201 }
     )
-  } catch {
+  } catch (error) {
+    console.error("Failed to create bank account:", error)
     return NextResponse.json({ error: "Failed to create bank account" }, { status: 500 })
   }
 }

@@ -8,6 +8,9 @@ import type { Client, Invoice } from "@/types"
 import { formatCurrency } from "@/lib/utils"
 import { X, Send, ArrowLeft } from "lucide-react"
 import { ClientSelect } from "@/components/ui/client-select"
+import { ItemPicker } from "@/components/ui/item-picker"
+
+interface CatalogItem { id: string; name: string; type: string; description: string | null; unit: string; rate: string; isActive: boolean }
 
 interface LineItem {
   description: string
@@ -19,6 +22,7 @@ interface LineItem {
 export default function NewInvoicePage() {
   const router = useRouter()
   const { data: clients, refresh: refreshClients } = useApi<Client[]>("/api/clients", [])
+  const { data: catalogItems } = useApi<CatalogItem[]>("/api/items", [])
 
   const [clientId, setClientId] = useState("")
   const [dueDate, setDueDate] = useState("")
@@ -205,12 +209,15 @@ export default function NewInvoicePage() {
                     {lineItems.map((item, idx) => (
                       <tr key={idx}>
                         <td>
-                          <input
-                            type="text"
+                          <ItemPicker
                             value={item.description}
-                            onChange={(e) => updateLineItem(idx, "description", e.target.value)}
-                            className="input"
-                            placeholder="Service description"
+                            onChange={(val) => updateLineItem(idx, "description", val)}
+                            onItemSelect={({ description: desc, rate }) => {
+                              const updated = [...lineItems]
+                              updated[idx] = { ...updated[idx], description: desc, rate, amount: Number(updated[idx].hours) * rate }
+                              setLineItems(updated)
+                            }}
+                            items={catalogItems}
                           />
                         </td>
                         <td>
@@ -263,16 +270,22 @@ export default function NewInvoicePage() {
             {/* Tax Rate */}
             <div className="grid grid-cols-3 gap-4">
               <div>
-                <label className="label">Tax Rate (%)</label>
-                <input
-                  type="number"
+                <label className="label">Tax Rate</label>
+                <select
                   value={taxRate}
-                  onChange={(e) => setTaxRate(parseFloat(e.target.value) || 0)}
+                  onChange={(e) => setTaxRate(parseFloat(e.target.value))}
                   className="input w-full"
-                  min="0"
-                  max="100"
-                  step="0.1"
-                />
+                >
+                  <option value={0}>No Tax (0%)</option>
+                  <option value={5}>5% - Reduced</option>
+                  <option value={7}>7% - BBO (Curaçao)</option>
+                  <option value={9}>9% - Low VAT</option>
+                  <option value={12}>12%</option>
+                  <option value={15}>15%</option>
+                  <option value={19}>19% - Standard VAT</option>
+                  <option value={21}>21% - Standard VAT (NL/EU)</option>
+                  <option value={25}>25%</option>
+                </select>
               </div>
             </div>
 

@@ -4,7 +4,7 @@ import { useState } from "react"
 import { Header } from "@/components/dashboard/header"
 import { DataTable } from "@/components/ui/data-table"
 import { Modal } from "@/components/ui/modal"
-import { useApi } from "@/hooks/use-api"
+import { useApi, apiMutate } from "@/hooks/use-api"
 import type { Expense } from "@/types"
 import { formatCurrency, formatDate, getStatusColor } from "@/lib/utils"
 import { ListToolbar, applyFilters, type ActiveFilter } from "@/components/ui/list-toolbar"
@@ -13,7 +13,39 @@ import { TrendingDown } from "lucide-react"
 
 export default function ExpensesPage() {
   const [showCreate, setShowCreate] = useState(false)
-  const { data: expenses, loading } = useApi<Expense[]>("/api/expenses", [])
+  const { data: expenses, loading, refresh } = useApi<Expense[]>("/api/expenses", [])
+  const [formDesc, setFormDesc] = useState("")
+  const [formAmount, setFormAmount] = useState("")
+  const [formCategory, setFormCategory] = useState("SOFTWARE")
+  const [formVendor, setFormVendor] = useState("")
+  const [formDate, setFormDate] = useState("")
+  const [formNotes, setFormNotes] = useState("")
+  const [formLoading, setFormLoading] = useState(false)
+  const [formError, setFormError] = useState("")
+
+  const handleCreateExpense = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!formDesc || !formAmount) { setFormError("Description and Amount are required"); return }
+    try {
+      setFormError("")
+      setFormLoading(true)
+      await apiMutate("/api/expenses", "POST", {
+        description: formDesc,
+        amount: parseFloat(formAmount),
+        category: formCategory,
+        vendor: formVendor || null,
+        date: formDate || undefined,
+        notes: formNotes || null,
+      })
+      setShowCreate(false)
+      setFormDesc(""); setFormAmount(""); setFormCategory("SOFTWARE"); setFormVendor(""); setFormDate(""); setFormNotes("")
+      refresh()
+    } catch (err) {
+      setFormError(err instanceof Error ? err.message : "Failed to create expense")
+    } finally {
+      setFormLoading(false)
+    }
+  }
   const [search, setSearch] = useState("")
   const [filters, setFilters] = useState<ActiveFilter[]>([])
   const [activeTab, setActiveTab] = useState("all")
@@ -112,22 +144,28 @@ export default function ExpensesPage() {
       </div>
 
       <Modal open={showCreate} onClose={() => setShowCreate(false)} title="Add Expense">
-        <form className="space-y-4">
-          <div><label className="label">Description</label><input type="text" className="input" placeholder="What was this expense for?" /></div>
+        <form className="space-y-4" onSubmit={handleCreateExpense}>
+          {formError && <div className="p-2 rounded-md bg-red-50 border border-red-200 text-red-700 text-sm">{formError}</div>}
+          <div><label className="label">Description *</label><input type="text" className="input" placeholder="What was this expense for?" value={formDesc} onChange={(e) => setFormDesc(e.target.value)} required /></div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div><label className="label">Amount (USD)</label><input type="number" className="input" step="0.01" /></div>
+            <div><label className="label">Amount (USD) *</label><input type="number" className="input" step="0.01" min="0" value={formAmount} onChange={(e) => setFormAmount(e.target.value)} required /></div>
             <div><label className="label">Category</label>
-              <select className="input"><option>Software</option><option>Hardware</option><option>Office</option><option>Travel</option><option>Marketing</option><option>Salary</option><option>Contractor</option><option>Utilities</option><option>Other</option></select>
+              <select className="input" value={formCategory} onChange={(e) => setFormCategory(e.target.value)}>
+                <option value="SOFTWARE">Software</option><option value="HARDWARE">Hardware</option><option value="OFFICE">Office</option>
+                <option value="TRAVEL">Travel</option><option value="MARKETING">Marketing</option><option value="SALARY">Salary</option>
+                <option value="CONTRACTOR">Contractor</option><option value="UTILITIES">Utilities</option><option value="INSURANCE">Insurance</option>
+                <option value="TAX">Tax</option><option value="OTHER">Other</option>
+              </select>
             </div>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div><label className="label">Vendor</label><input type="text" className="input" placeholder="Company name" /></div>
-            <div><label className="label">Date</label><input type="date" className="input" /></div>
+            <div><label className="label">Vendor</label><input type="text" className="input" placeholder="Company name" value={formVendor} onChange={(e) => setFormVendor(e.target.value)} /></div>
+            <div><label className="label">Date</label><input type="date" className="input" value={formDate} onChange={(e) => setFormDate(e.target.value)} /></div>
           </div>
-          <div><label className="label">Notes</label><textarea className="input" rows={2} placeholder="Additional notes..." /></div>
+          <div><label className="label">Notes</label><textarea className="input" rows={2} placeholder="Additional notes..." value={formNotes} onChange={(e) => setFormNotes(e.target.value)} /></div>
           <div className="flex justify-end gap-2 pt-3 border-t border-surface-200">
             <button type="button" onClick={() => setShowCreate(false)} className="btn-secondary">Cancel</button>
-            <button type="submit" className="btn-primary">Add Expense</button>
+            <button type="submit" disabled={formLoading} className="btn-primary">{formLoading ? "Saving..." : "Add Expense"}</button>
           </div>
         </form>
       </Modal>
