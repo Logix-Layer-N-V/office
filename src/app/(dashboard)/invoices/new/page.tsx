@@ -194,7 +194,7 @@ export default function NewInvoicePage() {
             {/* Line Items Section */}
             <div>
               <label className="label mb-2 block">Line Items</label>
-              <div className="rounded-md border border-surface-200 overflow-hidden">
+              <div className="rounded-md border border-surface-200">
                 <table className="table-compact w-full">
                   <thead>
                     <tr>
