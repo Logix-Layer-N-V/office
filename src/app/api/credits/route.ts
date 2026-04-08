@@ -2,6 +2,7 @@ import { db } from "@/lib/db"
 import { credits } from "@/db/schema"
 import { desc } from "drizzle-orm"
 import { NextResponse } from "next/server"
+import { getDefaultOrgId } from "@/lib/get-org"
 
 export async function GET() {
   try {
@@ -17,6 +18,7 @@ export async function POST(req: Request) {
   try {
     if (!db) return NextResponse.json({ error: "Database not configured" }, { status: 503 })
     const body = await req.json()
+    const orgId = await getDefaultOrgId()
     const [credit] = await db
       .insert(credits)
       .values({
@@ -27,7 +29,7 @@ export async function POST(req: Request) {
         remaining: String(body.remaining),
         status: body.status ?? "ACTIVE",
         reason: body.reason ?? null,
-        organizationId: body.organizationId ?? "org_default",
+        organizationId: body.organizationId || orgId,
         issuedAt: body.issuedAt ? new Date(body.issuedAt) : new Date(),
         expiresAt: body.expiresAt ? new Date(body.expiresAt) : null,
       })

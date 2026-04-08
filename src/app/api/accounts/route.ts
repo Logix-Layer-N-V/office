@@ -2,6 +2,7 @@ import { db } from "@/lib/db"
 import { chartOfAccounts, ledgerEntries } from "@/db/schema"
 import { eq, asc } from "drizzle-orm"
 import { NextResponse } from "next/server"
+import { getDefaultOrgId } from "@/lib/get-org"
 
 export async function GET() {
   try {
@@ -22,6 +23,7 @@ export async function POST(req: Request) {
   try {
     if (!db) return NextResponse.json({ error: "Database not configured" }, { status: 503 })
     const body = await req.json()
+    const orgId = await getDefaultOrgId()
     const [account] = await db
       .insert(chartOfAccounts)
       .values({
@@ -32,7 +34,7 @@ export async function POST(req: Request) {
         subtype: body.subtype ?? null,
         description: body.description ?? null,
         isActive: body.isActive ?? true,
-        organizationId: body.organizationId ?? "org_default",
+        organizationId: body.organizationId || orgId,
       })
       .returning()
     return NextResponse.json(account, { status: 201 })

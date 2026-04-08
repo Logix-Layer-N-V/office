@@ -2,6 +2,7 @@ import { db } from "@/lib/db"
 import { tasks, clients, projects, members } from "@/db/schema"
 import { eq, desc } from "drizzle-orm"
 import { NextResponse } from "next/server"
+import { getDefaultOrgId } from "@/lib/get-org"
 import { randomUUID } from "crypto"
 
 export async function GET() {
@@ -32,6 +33,7 @@ export async function POST(req: Request) {
   try {
     if (!db) return NextResponse.json({ error: "Database not configured" }, { status: 503 })
     const body = await req.json()
+    const orgId = await getDefaultOrgId()
     const id = randomUUID()
     const [created] = await db
       .insert(tasks)
@@ -44,7 +46,7 @@ export async function POST(req: Request) {
         projectId: body.projectId || null,
         clientId: body.clientId || null,
         assigneeId: body.assigneeId || null,
-        organizationId: body.organizationId || "org1",
+        organizationId: body.organizationId || orgId,
         dueDate: body.dueDate ? new Date(body.dueDate) : null,
       })
       .returning()

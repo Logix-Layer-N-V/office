@@ -2,6 +2,7 @@ import { db } from "@/lib/db"
 import { expenses } from "@/db/schema"
 import { desc } from "drizzle-orm"
 import { NextResponse } from "next/server"
+import { getDefaultOrgId } from "@/lib/get-org"
 
 export async function GET() {
   try {
@@ -17,6 +18,7 @@ export async function POST(req: Request) {
   try {
     if (!db) return NextResponse.json({ error: "Database not configured" }, { status: 503 })
     const body = await req.json()
+    const orgId = await getDefaultOrgId()
     const [expense] = await db
       .insert(expenses)
       .values({
@@ -28,7 +30,7 @@ export async function POST(req: Request) {
         receipt: body.receipt || null,
         notes: body.notes || null,
         status: body.status || "PENDING",
-        organizationId: body.organizationId || "org_default",
+        organizationId: body.organizationId || orgId,
         date: body.date ? new Date(body.date) : new Date(),
       })
       .returning()

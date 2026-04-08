@@ -2,6 +2,7 @@ import { db } from "@/lib/db"
 import { projects, clients } from "@/db/schema"
 import { eq, desc } from "drizzle-orm"
 import { NextResponse } from "next/server"
+import { getDefaultOrgId } from "@/lib/get-org"
 import { randomUUID } from "crypto"
 
 export async function GET() {
@@ -25,6 +26,7 @@ export async function POST(req: Request) {
   try {
     if (!db) return NextResponse.json({ error: "Database not configured" }, { status: 503 })
     const body = await req.json()
+    const orgId = await getDefaultOrgId()
     const id = randomUUID()
     const [created] = await db
       .insert(projects)
@@ -35,7 +37,7 @@ export async function POST(req: Request) {
         status: body.status || "PLANNING",
         priority: body.priority || "MEDIUM",
         clientId: body.clientId,
-        organizationId: body.organizationId || "org1",
+        organizationId: body.organizationId || orgId,
         budget: body.budget ? String(body.budget) : "0",
         progress: 0,
         startDate: body.startDate ? new Date(body.startDate) : null,

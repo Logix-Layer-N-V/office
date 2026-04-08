@@ -2,6 +2,7 @@ import { db } from "@/lib/db"
 import { invoices, invoiceItems, clients, payments } from "@/db/schema"
 import { eq, desc } from "drizzle-orm"
 import { NextResponse } from "next/server"
+import { getDefaultOrgId } from "@/lib/get-org"
 
 export async function GET() {
   try {
@@ -26,6 +27,7 @@ export async function POST(req: Request) {
   try {
     if (!db) return NextResponse.json({ error: "Database not configured" }, { status: 503 })
     const body = await req.json()
+    const orgId = await getDefaultOrgId()
 
     const lineItems: { description: string; hours: number; rate: number; amount: number }[] = body.items || []
     const subtotal = lineItems.reduce((s, i) => s + (i.amount || 0), 0)
@@ -44,7 +46,7 @@ export async function POST(req: Request) {
         description: body.description || null,
         status: body.status || "DRAFT",
         clientId: body.clientId,
-        organizationId: body.organizationId || "org_default",
+        organizationId: body.organizationId || orgId,
         subtotal: String(subtotal),
         taxRate: String(taxRate),
         taxAmount: String(taxAmount),

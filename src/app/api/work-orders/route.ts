@@ -2,6 +2,7 @@ import { db } from "@/lib/db"
 import { workOrders, clients, projects } from "@/db/schema"
 import { eq, desc } from "drizzle-orm"
 import { NextResponse } from "next/server"
+import { getDefaultOrgId } from "@/lib/get-org"
 import { randomUUID } from "crypto"
 
 export async function GET() {
@@ -27,6 +28,7 @@ export async function POST(req: Request) {
   try {
     if (!db) return NextResponse.json({ error: "Database not configured" }, { status: 503 })
     const body = await req.json()
+    const orgId = await getDefaultOrgId()
     const id = randomUUID()
 
     // Generate work order number
@@ -43,7 +45,7 @@ export async function POST(req: Request) {
         status: body.status || "OPEN",
         projectId: body.projectId || null,
         clientId: body.clientId,
-        organizationId: body.organizationId || "org1",
+        organizationId: body.organizationId || orgId,
         hours: body.hours ? String(body.hours) : "0",
         rate: body.rate ? String(body.rate) : "0",
         date: body.date ? new Date(body.date) : new Date(),
